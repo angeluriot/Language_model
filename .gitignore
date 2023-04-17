@@ -1,0 +1,9 @@
+bacup
+data
+venv
+model.h5
+notes.txt
+test.md
+test.py
+tests.ipynb
+__pycache__
