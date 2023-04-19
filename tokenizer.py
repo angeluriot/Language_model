@@ -1,27 +1,48 @@
 import os, pickle
 import numpy as np
 from settings import *
+import tokenizers as tk
+from tokenizers.models import *
+from tokenizers.trainers import *
+from tokenizers.pre_tokenizers import *
+from tokenizers.normalizers import *
+
 
 class Tokenizer:
 
 	def __init__(self, dataset):
 
 		if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl')):
-			print('Loading vocab...')
-			self.vocab = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'rb'))
 
-		if not os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl')):
-			words = self.pretokenize(dataset)
-			self.vocab = self.merge(words)
+			print('Loading vocab...')
+			vocab = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'rb'))
+
+			tokenizer = tk.Tokenizer(BPE(vocab = vocab, unk_token = '<unk>'))
+			tokenizer.normalizer = BertNormalizer(strip_accents = False, lowercase = False)
+			tokenizer.pre_tokenizer = Metaspace(replacement = " ", add_prefix_space = False)
+
+		else:
+
+			tokenizer = tk.Tokenizer(BPE(unk_token = '<unk>'))
+			tokenizer.normalizer = BertNormalizer(strip_accents = False, lowercase = False)
+			tokenizer.pre_tokenizer = Metaspace(replacement = " ", add_prefix_space = False)
+
+			trainer = BpeTrainer(
+				vocab_size = VOCAB_SIZE,
+				show_progress = True,
+				special_tokens = ['<eom>', '<eod>']
+			)
+
+			tokenizer.train([os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')], trainer)
+
+			tokenizer.model.save(os.path.join(PROCESSED_DATA_DIR, 'tokenizer.json'))
 
 			if not os.path.exists(PROCESSED_DATA_DIR):
-				os.makedirs(PROCESSED_DATA_DIR)
+				os.mkdir(PROCESSED_DATA_DIR)
 
-			pickle.dump(self.vocab, open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'wb'))
 
-		self.to_index = {t: i for i, t in enumerate(self.vocab)}
-		self.to_token = {i: t for i, t in enumerate(self.vocab)}
-		self.longest_token = max([len(t) for t in self.vocab])
+for v in vocab:
+	print(f'[{v}]', end = ' ')
 
 
 	def pretokenize(self, dataset):

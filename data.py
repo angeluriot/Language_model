@@ -8,27 +8,20 @@ from settings import *
 def clean(text):
 
 	text = text.strip()
-	text = text.replace('’', "'")
-	text = text.replace('‘', "'")
-	text = text.replace('`', "'")
+	text = text.replace('’', "'"); text = text.replace('‘', "'"); text = text.replace('“', '"'); text = text.replace('”', '"'); text = text.replace('„', '"'); text = text.replace('´', "'"); text = text.replace('`', "'"); text = text.replace('ʹ', "'")
+	text = text.replace('—', '-'); text = text.replace('–', '-'); text = text.replace('−', '-'); text = text.replace('⁻', '-'); text = text.replace('―', '-'); text = text.replace('ˉ', '-'); text = text.replace('¯', '-')
 	text = text.replace('…', '...')
-	text = text.replace('—', '-')
-	text = text.replace('–', '-')
-	text = text.replace('−', '-')
-	text = text.replace('“', '"')
-	text = text.replace('”', '"')
-	text = text.replace('„', '"')
-	text = text.replace('´', "'")
-	text = text.replace('⁻', '-')
 	text = text.replace('⁄', '/')
 	text = text.replace('＊', '*')
-	text = text.replace('	', '    ')
+	text = text.replace('\t', ' ')
 	text = text.replace('º', '°')
-	text = text.replace('―', '-')
-	text = text.replace('ˉ', '-')
-	text = text.replace('¯', '-')
 	text = text.replace('＾', '^')
-	text = text.replace('）', ') ')
+	text = text.replace('）', ') '); text = text.replace('（', ' (')
+	text = text.replace('［', '['); text = text.replace('］', ']')
+	text = text.replace('｛', '{'); text = text.replace('｝', '}')
+	text = text.replace('＜', '<'); text = text.replace('＞', '>')
+	text = text.replace('＝', '='); text = text.replace('＋', '+'); text = text.replace('％', '%'); text = text.replace('＄', '$'); text = text.replace('＃', '#')
+	text = text.replace('¸', ',')
 
 	ban_space_chars = [' ', ' ', ' ', ' ', '­', '️', '‍']
 	ban_chars = ['̃', '̈ ​', '﻿', '́', '͟', '​', '̂', '͡', '‎', '︎', '̀', '͜', '̶', '̿', '̲', '̯', '̅', '‏', '', '‪', '‬', '‮', '卐']
@@ -41,87 +34,50 @@ def clean(text):
 
 	return text
 
+
 def parse_dataset(dataset_path):
 
-	print('Importing dataset...')
+	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')):
+		return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
 
-	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'dataset.pkl')) and os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'chars.pkl')):
-		dataset = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'dataset.pkl'), 'rb'))
-		chars = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'chars.pkl'), 'rb'))
-		return dataset, chars
+	with open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'w', encoding = 'utf-8') as file:
 
-	dataset = []
-	chars = {}
-	data = ET.parse(dataset_path).getroot()
+		print('Importing dataset...')
+		data = ET.parse(dataset_path).getroot()
+		file.truncate(0)
+		dataset_size = 0
+		space_end = False
 
-	print('Parsing dataset...')
+		print('Parsing dataset...')
 
-	for i in range(len(data)):
-		for j in range(len(data[i])):
+		for i in range(len(data)):
+			for j in range(len(data[i])):
 
-			message = list(clean(data[i][j].text))
+				message = clean(data[i][j].text)
+				message = message.replace('\n', ' <nl> ')
+				message = " ".join(message.split())
+				file.write(message)
+				dataset_size += len(message)
 
-			for c in message:
-				if c == '\n':
-					dataset.append('<nl>')
-					chars['<nl>'] = chars.get('<nl>', 0) + 1
-				elif c != '':
-					dataset.append(c)
-					chars[c] = chars.get(c, 0) + 1
+				if len(message) > 0:
+					space_end = False
 
-			if len(dataset) > 0 and dataset[-1] != '<eom>' and dataset[-1] != '<eod>':
-				dataset.append('<eom>')
-				chars['<eom>'] = chars.get('<eom>', 0) + 1
+				if dataset_size > 0 and len(message) > 0:
+					file.write(('' if space_end else ' ') + '<eom> ')
+					dataset_size += 7
+					space_end = True
 
-		if len(dataset) > 0 and dataset[-1] != '<eod>':
-			dataset.append('<eod>')
-			chars['<eod>'] = chars.get('<eod>', 0) + 1
+			if dataset_size > 0:
+				file.write(('' if space_end else ' ') + '<eod> ')
+				dataset_size += 7
+				space_end = True
 
-		if i % (len(data) // 100) == 0:
-			print(f'\rProgress: {int((i / len(data)) * 100)}%     ', end = '')
+			if DATASET_MAX_SIZE != None and dataset_size > DATASET_MAX_SIZE:
+				break
 
-		if DATASET_MAX_SIZE != None and len(dataset) > DATASET_MAX_SIZE:
-			break
+	print('Importing parsed dataset...')
+	return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
 
-	print('\rProgress: 100%     ')
-
-	chars = sorted(chars.items(), key = lambda x: x[1], reverse = True)
-	chars = [t[0] for t in chars]
-
-	for c in CONTROL_CHARS:
-		if c not in chars:
-			chars.append(c)
-
-	print('Cleaning chars...')
-
-	if len(chars) > NUM_CHARS_MAX:
-
-		i = len(chars) - 1
-
-		while i >= 0 and len(chars) > NUM_CHARS_MAX:
-
-			if chars[i] not in CONTROL_CHARS and emoji.emoji_count(chars[i]) == 0:
-				chars.pop(i)
-
-			i -= 1
-
-	print('Cleaning dataset...')
-
-	char_dict = {c: i for i, c in enumerate(chars)}
-
-	for i in range(len(dataset)):
-		if dataset[i] not in char_dict:
-			dataset[i] = '<unk>'
-
-	print('Saving dataset...')
-
-	if not os.path.exists(PROCESSED_DATA_DIR):
-		os.makedirs(PROCESSED_DATA_DIR)
-
-	pickle.dump(dataset, open(os.path.join(PROCESSED_DATA_DIR, 'dataset.pkl'), 'wb'))
-	pickle.dump(chars, open(os.path.join(PROCESSED_DATA_DIR, 'chars.pkl'), 'wb'))
-
-	return dataset, chars
 
 
 def split_dataset(dataset):

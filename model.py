@@ -3,6 +3,7 @@ from keras.models import *
 from keras.layers import *
 from keras.initializers import RandomNormal
 
+from utils import *
 from layers import *
 from settings import *
 from data import *
@@ -74,7 +75,7 @@ def create_model(vocab_size = VOCAB_SIZE):
 def predict(model, input, tokenizer, max_length, precision = 1.0, verbose = False):
 
 	output = np.array([], dtype = np.int32)
-	input = tokenizer.encode(input)
+	input = tokenizer.encode(input).ids
 
 	for _ in range(max_length):
 
@@ -87,6 +88,6 @@ def predict(model, input, tokenizer, max_length, precision = 1.0, verbose = Fals
 		output = np.append(output, index)
 
 		if verbose:
-			print(tokenizer.decode(index), end = "")
+			print(decode(tokenizer, [index]), end = "")
 
 	return tokenizer.decode(output)
