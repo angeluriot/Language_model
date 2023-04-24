@@ -6,3 +6,4 @@ notes.txt
 final_SPF.csv
 __pycache__
 .DS_Store
+env.py
