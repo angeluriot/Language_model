@@ -3,7 +3,7 @@ data
 venv
 model.h5
 notes.txt
-final_SPF.csv
+final_SPF.xml
 __pycache__
 .DS_Store
 env.py
