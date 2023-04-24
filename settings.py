@@ -1,4 +1,6 @@
-DATASET_PATH = 'E:/Angel/Development/Datasets/French_reddit/dataset.xml'
+import env
+
+DATASET_PATH = env.DATASET_PATH
 PROCESSED_DATA_DIR = './data'
 DATASET_MAX_SIZE = None
 NUM_CHARS_MAX = 1000

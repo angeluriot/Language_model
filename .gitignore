@@ -3,7 +3,6 @@ data
 venv
 model.h5
 notes.txt
-test.md
-test.py
-tests.ipynb
+final_SPF.csv
 __pycache__
+.DS_Store

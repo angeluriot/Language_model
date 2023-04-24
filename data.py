@@ -32,10 +32,16 @@ def clean(text):
 	for c in ban_chars:
 		text = text.replace(c, '')
 
+	while ' \n' in text:
+		text = text.replace(' \n', '\n')
+
 	return text
 
 
 def parse_dataset(dataset_path):
+
+	if not os.path.exists(PROCESSED_DATA_DIR):
+		os.makedirs(PROCESSED_DATA_DIR)
 
 	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')):
 		return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
@@ -46,7 +52,6 @@ def parse_dataset(dataset_path):
 		data = ET.parse(dataset_path).getroot()
 		file.truncate(0)
 		dataset_size = 0
-		space_end = False
 
 		print('Parsing dataset...')
 
@@ -54,23 +59,17 @@ def parse_dataset(dataset_path):
 			for j in range(len(data[i])):
 
 				message = clean(data[i][j].text)
-				message = message.replace('\n', ' <nl> ')
-				message = " ".join(message.split())
+				message = message.replace('\n', '<nl>')
 				file.write(message)
 				dataset_size += len(message)
 
-				if len(message) > 0:
-					space_end = False
-
 				if dataset_size > 0 and len(message) > 0:
-					file.write(('' if space_end else ' ') + '<eom> ')
-					dataset_size += 7
-					space_end = True
+					file.write('<eom>')
+					dataset_size += 5
 
 			if dataset_size > 0:
-				file.write(('' if space_end else ' ') + '<eod> ')
-				dataset_size += 7
-				space_end = True
+				file.write('<eod>')
+				dataset_size += 5
 
 			if DATASET_MAX_SIZE != None and dataset_size > DATASET_MAX_SIZE:
 				break
