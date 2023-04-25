@@ -22,15 +22,14 @@ class Tokenizer:
 		if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl')):
 			print('Loading vocab...')
 			self.vocab = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'rb'))
+			self.to_index = {v: i for i, v in enumerate(self.vocab)}
+			self.to_token = {i: v for i, v in enumerate(self.vocab)}
+			self.max_token_length = max([len(v) for v in self.vocab])
 
 		else:
 			self.create_vocab()
 			self.sort_vocab(dataset)
 			pickle.dump(self.vocab, open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'wb'))
-
-		self.to_index = {v: i for i, v in enumerate(self.vocab)}
-		self.to_token = {i: v for i, v in enumerate(self.vocab)}
-		self.max_token_length = max([len(v) for v in self.vocab])
 
 
 	def create_vocab(self):
@@ -49,41 +48,57 @@ class Tokenizer:
 		tokenizer.train([os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')], trainer)
 
 		self.vocab = tokenizer.get_vocab().keys()
+		self.to_index = {v: i for i, v in enumerate(self.vocab)}
+		self.to_token = {i: v for i, v in enumerate(self.vocab)}
 		self.max_token_length = max([len(v) for v in self.vocab])
+
+		print('Max token length:', self.max_token_length)
 
 
 	def sort_vocab(self, dataset):
 
 		print('Sorting vocab...')
-
-		text = list(dataset)
 		vocab = {v: 0 for v in self.vocab}
-		i = 0
 
-		while i < len(text):
+		print('Pretokenize...')
+		data = mypretk.split(dataset, True)
 
-			if text[i] == '':
+		for i in range(len(data)):
+
+			if i % int(len(data) / 100) == 0:
+				print('Progress:', str(int((i / len(data)) * 100)) + '%               ', end = '\r')
+
+			if data[i] in self.to_index:
+				vocab[data[i]] += 1
 				continue
 
-			found = False
+			j = 0
 
-			for j in reversed(range(self.max_token_length)):
+			while j < len(data[i]):
 
-				word = ''.join(text[i:i + j + 1])
+				found = False
 
-				if word in self.to_index:
-					vocab[word] += 1
-					i += j
-					found = True
-					break
+				for k in reversed(range(min(self.max_token_length, len(data[i]) - j))):
 
-			if not found:
-				vocab['<unk>'] += 1
+					word = data[i][j:j + k + 1]
 
-			i += 1
+					if word in self.to_index:
+						vocab[word] += 1
+						j += k
+						found = True
+						break
 
+				if not found:
+					vocab['<unk>'] += 1
+
+				j += 1
+
+		print('Progress: 100%               ')
 		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
 		self.vocab = [v[0] for v in self.vocab]
+		self.to_index = {v: i for i, v in enumerate(self.vocab)}
+		self.to_token = {i: v for i, v in enumerate(self.vocab)}
+		self.max_token_length = max([len(v) for v in self.vocab])
 
 
 	def encode(self, text):
