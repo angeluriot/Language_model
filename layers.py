@@ -21,10 +21,10 @@ class TokenEmbedding(Layer):
 		config = super().get_config().copy()
 
 		config.update({
-			"vocab_size": self.vocab_size,
-			"embedding_dim": self.embedding_dim,
-			"max_context": self.max_context,
-			"padding_token": self.padding_token
+			'vocab_size': self.vocab_size,
+			'embedding_dim': self.embedding_dim,
+			'max_context': self.max_context,
+			'padding_token': self.padding_token
 		})
 
 		return config
@@ -80,9 +80,9 @@ class PositionEmbedding(Layer):
 		config = super().get_config().copy()
 
 		config.update({
-			"max_context": self.max_context,
-			"embedding_dim": self.embedding_dim,
-			"padding_token": self.padding_token
+			'max_context': self.max_context,
+			'embedding_dim': self.embedding_dim,
+			'padding_token': self.padding_token
 		})
 
 		return config

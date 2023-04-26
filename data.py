@@ -82,17 +82,17 @@ def parse_dataset(dataset_path):
 
 def split_dataset(dataset):
 
-	sub_y_size = int((len(dataset) * Y_RATIO) / NUM_Y_PARTS)
+	sub_val_size = int((len(dataset) * VAL_RATIO) / NUM_VAL_PARTS)
 	train_indexes = []
 	val_indexes = []
-	val_start_indexes = [random.randint(2 * MAX_CONTEXT, len(dataset) - sub_y_size - 3 * MAX_CONTEXT) for _ in range(NUM_Y_PARTS)]
+	val_start_indexes = [random.randint(2 * MAX_CONTEXT, len(dataset) - sub_val_size - 3 * MAX_CONTEXT) for _ in range(NUM_VAL_PARTS)]
 	i = 0
 
 	while i < len(dataset) - MAX_CONTEXT:
 
 		if (i + MAX_CONTEXT - 1) in val_start_indexes:
 			i += MAX_CONTEXT - 1
-			for _ in range(sub_y_size):
+			for _ in range(sub_val_size):
 				i += 1
 				val_indexes.append(i)
 			i += MAX_CONTEXT + 1
@@ -100,4 +100,4 @@ def split_dataset(dataset):
 		train_indexes.append(i)
 		i += 1
 
-	return np.array(train_indexes), np.array(val_indexes)
+	return np.array(train_indexes, dtype = np.int32), np.array(val_indexes, dtype = np.int32)

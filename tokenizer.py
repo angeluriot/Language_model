@@ -104,21 +104,22 @@ class Tokenizer:
 	def encode(self, text, verbose = False):
 
 		if verbose:
-			print('Encoding dataset...')
+			print('Pretokenize...')
 
-		vocab = {v: 0 for v in self.vocab}
+		data = mypretk.split(text)
 
 		if verbose:
-			print('Pretokenize...')
-		data = mypretk.split(dataset)
+			print('Encoding dataset...')
+
+		output = []
 
 		for i in range(len(data)):
 
-			if i % int(len(data) / 100) == 0:
+			if verbose and i % int(len(data) / 100) == 0:
 				print('Progress:', str(int((i / len(data)) * 100)) + '%               ', end = '\r')
 
 			if data[i] in self.to_index:
-				vocab[data[i]] += 1
+				output.append(self.to_index[data[i]])
 				continue
 
 			j = 0
@@ -132,23 +133,18 @@ class Tokenizer:
 					word = data[i][j:j + k + 1]
 
 					if word in self.to_index:
-						vocab[word] += 1
+						output.append(self.to_index[word])
 						j += k
 						found = True
 						break
 
 				if not found:
-					vocab['<unk>'] += 1
+					output.append(self.to_index['<unk>'])
 
 				j += 1
 
-		print('Progress: 100%               ')
-		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
-		self.vocab = [v[0] for v in self.vocab if v[1] > 0]
-		self.to_index = {v: i for i, v in enumerate(self.vocab)}
-		self.to_token = {i: v for i, v in enumerate(self.vocab)}
-		self.max_token_length = max([len(v) for v in self.vocab])
-		i += 1
+		if verbose:
+			print('Progress: 100%               ')
 
 		return np.array(output, dtype = np.int32)
 
@@ -177,9 +173,9 @@ class Tokenizer:
 				elif t == self.to_index['<unk>']:
 					text.append('�')
 				elif t == self.to_index['<eom>']:
-					text.append('\n\n')
+					text.append('\n\n<<< END OF MESSAGE >>>\n\n')
 				elif t == self.to_index['<eod>']:
-					text.append('\n\n-------------------------------------------------\n\n')
+					text.append('\n\n<<< END OF DIALOGUE >>>\n\n')
 				else:
 					text.append(self.to_token[t])
 

@@ -12,13 +12,13 @@ class LRScheduler(Callback):
 
 	def on_batch_begin(self, batch, logs = None):
 
-		step = self.epoch * (self.train_size // BATCH_SIZE) + batch
+		step = self.epoch * self.train_size + batch
 
 		if step <= INCREASE_STEPS:
 			lr = MAX_LEARNING_RATE * (step / INCREASE_STEPS)
 
 		else:
-			float_epoch = self.epoch + batch / (self.train_size // BATCH_SIZE)
+			float_epoch = self.epoch + batch / self.train_size
 			lr = max(MAX_LEARNING_RATE * (MIN_LEARNING_RATE / MAX_LEARNING_RATE) ** (float_epoch / DECAY_EPOCHS), MIN_LEARNING_RATE)
 
 		backend.set_value(self.model.optimizer.lr, backend.get_value(lr))
@@ -31,4 +31,4 @@ class LRScheduler(Callback):
 
 	def on_batch_end(self, batch, logs = None):
 
-		logs["lr"] = backend.get_value(self.model.optimizer.lr)
+		logs['lr'] = backend.get_value(self.model.optimizer.lr)

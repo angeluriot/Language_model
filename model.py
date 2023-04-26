@@ -72,22 +72,29 @@ def create_model(vocab_size = VOCAB_SIZE):
 	return model
 
 
-def predict(model, input, tokenizer, max_length, precision = 1.0, verbose = False):
+def predict(model, input, tokenizer, max_length, temperature = 1.0, top_p = 1.0, verbose = False):
 
-	output = np.array([], dtype = np.int32)
-	input = tokenizer.encode(input).ids
+	input = tokenizer.encode(input)
+	output = []
 
 	for _ in range(max_length):
 
 		probabilities = model.predict(np.array([input]), verbose = 0)[0, -1]
-		probabilities = np.power(probabilities, precision)
-		probabilities = probabilities / np.sum(probabilities)
+		probabilities = np.log(probabilities) / temperature
+		probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
+
+		#sorted_indices = np.argsort(probabilities)[::-1]
+		#cumulative_probabilities = np.cumsum(probabilities[sorted_indices])
+		#sorted_indices = sorted_indices[cumulative_probabilities <= top_p]
+		#probabilities = probabilities[sorted_indices]
+		#probabilities = probabilities / np.sum(probabilities)
+
 		index = np.random.choice(range(len(probabilities)), p = probabilities)
 
 		input = np.append(input, index)
-		output = np.append(output, index)
+		output.append(index)
 
 		if verbose:
-			print(decode(tokenizer, [index]), end = "")
+			print(tokenizer.decode(index), end = '')
 
 	return tokenizer.decode(output)

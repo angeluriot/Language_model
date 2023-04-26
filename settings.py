@@ -4,8 +4,8 @@ DATASET_PATH = env.DATASET_PATH
 PROCESSED_DATA_DIR = './data'
 DATASET_MAX_SIZE = None
 CONTROL_CHARS = ['<nl>', '<eom>', '<eod>', '<unk>']
-NUM_Y_PARTS = 10
-Y_RATIO = 0.05
+VAL_RATIO = 0.05
+NUM_VAL_PARTS = 10
 
 VOCAB_SIZE = 20_000		# 50_257
 MAX_CONTEXT = 128		# 1024
@@ -17,9 +17,10 @@ DROPOUT = 0.1
 USE_BIAS = True
 INIT_STDDEV = 0.02
 
-VAL_FREQUENCY = 1000
+STEP_PER_EPOCH = 500
+VAL_PER_EPOCH = int(STEP_PER_EPOCH * VAL_RATIO)
 BATCH_SIZE = 32
-NUM_EPOCHS = VAL_FREQUENCY
+NUM_EPOCHS = 1000
 MAX_LEARNING_RATE = 0.00025
 MIN_LEARNING_RATE = 0.00001
 INCREASE_STEPS = 2000
@@ -55,7 +56,7 @@ DONT_KNOW_ANSWERS = [
 	"I 'm sorry , the question appears to be unclear .",
 	"Regrettably , I 'm not able to grasp the question .",
 	"Pardon my confusion , I ca n't comprehend the inquiry .",
-	"Forgive me , but the question is beyond my understanding ."
+	"Forgive me , but the question is beyond my understanding .",
 	"My apologies , but I 'm having trouble with the question .",
 	"I 'm afraid I ca n't quite grasp the inquiry .",
 	"Excuse me , I do n't understand the question posed .",
