@@ -1,99 +1,38 @@
+import regex
 from tokenizers import *
 from settings import *
 
-def split(text, show_progress = False):
 
-	# Split control characters
+def split(text):
 
-	if show_progress:
-		print('Splitting control characters...')
+	# Split in words
 
-	words = [text]
+	reg = r'(' + r'|'.join(CONTROL_CHARS) + r'|\d+|\s+|\p{L}+|[^\d\p{L}\s' + r''.join([f'[{i}]' for i in CONTROL_CHARS]) + r']+)'
+	words = regex.split(reg, text, flags = regex.UNICODE, concurrent = False)
+	words = list(filter(None, words))
+
+	# Add beginning spaces
+
 	temp = []
 	i = 0
 
-	for control in CONTROL_CHARS:
-		for i in range(len(words)):
+	while i < len(words) - 1:
 
-			parts = words[i].split(control)
-
-			for part in parts:
-				if len(part) > 0:
-					temp.append(part)
-
-				temp.append(control)
-
-			if len(parts) > 0:
-				temp.pop()
-
-		words = temp
-		temp = []
-
-	# Split words
-
-	if show_progress:
-		print('Splitting words...')
-
-	for i in range(len(words)):
-
-		if words[i] in CONTROL_CHARS:
-			temp.append(words[i])
+		if words[i] == ' ':
+			temp.append(' ' + words[i + 1])
+			i += 2
 			continue
 
-		word = ''
+		if words[i].endswith(' '):
+			temp.extend([words[i][:-1], ' ' + words[i + 1]])
+			i += 2
+			continue
 
-		for j in range(len(words[i])):
+		temp.append(words[i])
+		i += 1
 
-			if len(word) == 0:
-				word += words[i][j]
-				continue
-
-			if word[-1] != ' ' and words[i][j] == ' ':
-				temp.append(word)
-				word = words[i][j]
-				continue
-
-			if word[-1].isalpha() and not words[i][j].isalpha():
-				temp.append(word)
-				word = words[i][j]
-				continue
-
-			if word[-1].isnumeric() and not words[i][j].isnumeric():
-				temp.append(word)
-				word = words[i][j]
-				continue
-
-			if word[-1] != ' ' and not word[-1].isalpha() and words[i][j].isalpha():
-				temp.append(word)
-				word = words[i][j]
-				continue
-
-			word += words[i][j]
-
-		if len(word) > 0:
-			temp.append(word)
-
-	words = temp
-	temp = []
-
-	# Split multiple spaces
-
-	if show_progress:
-		print('Splitting multiple spaces...')
-
-	for i in range(len(words)):
-
-		j = 0
-
-		while j < len(words[i]) and words[i][j] == ' ':
-			j += 1
-
-		if j > 1 and j < len(words[i]):
-			temp.append(words[i][:j - 1])
-			temp.append(words[i][j - 1:])
-
-		else:
-			temp.append(words[i])
+	if i == len(words) - 1:
+		temp.append(words[-1])
 
 	words = temp
 
@@ -106,10 +45,10 @@ class PreTokenizer:
 
 		print('Pretokenize...')
 
-		words = split(str(normalized_string), True)
+		words = split(str(normalized_string))
 		words = [NormalizedString(word) for word in words]
 
-		print('Nb words:', len(words))
+		print('Nb words:', '{:,.0f}'.format(len(words)))
 		print('Merges...')
 
 		return words

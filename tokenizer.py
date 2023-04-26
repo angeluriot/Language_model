@@ -57,11 +57,11 @@ class Tokenizer:
 
 	def sort_vocab(self, dataset):
 
+		print('Pretokenize...')
+		data = mypretk.split(dataset)
+
 		print('Sorting vocab...')
 		vocab = {v: 0 for v in self.vocab}
-
-		print('Pretokenize...')
-		data = mypretk.split(dataset, True)
 
 		for i in range(len(data)):
 
@@ -95,45 +95,60 @@ class Tokenizer:
 
 		print('Progress: 100%               ')
 		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
-		self.vocab = [v[0] for v in self.vocab]
+		self.vocab = [v[0] for v in self.vocab if v[1] > 0]
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
 		self.to_token = {i: v for i, v in enumerate(self.vocab)}
 		self.max_token_length = max([len(v) for v in self.vocab])
 
 
-	def encode(self, text):
+	def encode(self, text, verbose = False):
 
-		if type(text) != list:
-			text = list(text)
+		if verbose:
+			print('Encoding dataset...')
 
-		output = []
-		i = 0
+		vocab = {v: 0 for v in self.vocab}
 
-		while i < len(text):
+		if verbose:
+			print('Pretokenize...')
+		data = mypretk.split(dataset)
 
-			if text[i] == '':
+		for i in range(len(data)):
+
+			if i % int(len(data) / 100) == 0:
+				print('Progress:', str(int((i / len(data)) * 100)) + '%               ', end = '\r')
+
+			if data[i] in self.to_index:
+				vocab[data[i]] += 1
 				continue
 
-			if text[i] == '\n':
-				output.append(self.to_index['<nl>'])
-				continue
+			j = 0
 
-			found = False
+			while j < len(data[i]):
 
-			for j in reversed(range(self.longest_token)):
-				if ''.join(text[i:i + j + 1]) in self.to_index:
-					output.append(self.to_index[''.join(text[i:i + j + 1])])
-					i += j
-					found = True
-					break
+				found = False
 
-			if not found:
-				print('found')
+				for k in reversed(range(min(self.max_token_length, len(data[i]) - j))):
 
-			if not found:
-				output.append(self.to_index['<unk>'])
+					word = data[i][j:j + k + 1]
 
-			i += 1
+					if word in self.to_index:
+						vocab[word] += 1
+						j += k
+						found = True
+						break
+
+				if not found:
+					vocab['<unk>'] += 1
+
+				j += 1
+
+		print('Progress: 100%               ')
+		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
+		self.vocab = [v[0] for v in self.vocab if v[1] > 0]
+		self.to_index = {v: i for i, v in enumerate(self.vocab)}
+		self.to_token = {i: v for i, v in enumerate(self.vocab)}
+		self.max_token_length = max([len(v) for v in self.vocab])
+		i += 1
 
 		return np.array(output, dtype = np.int32)
 

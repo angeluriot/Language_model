@@ -1,4 +1,4 @@
-import os, pickle, random
+import os, random
 import numpy as np
 import xml.etree.ElementTree as ET
 
@@ -34,6 +34,8 @@ def clean(text):
 	while ' \n' in text:
 		text = text.replace(' \n', '\n')
 
+	text = text.replace('\n', '<nl>')
+
 	return text
 
 
@@ -43,6 +45,7 @@ def parse_dataset(dataset_path):
 		os.makedirs(PROCESSED_DATA_DIR)
 
 	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')):
+		print('Importing parsed dataset...')
 		return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
 
 	with open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'w', encoding = 'utf-8') as file:
@@ -58,11 +61,10 @@ def parse_dataset(dataset_path):
 			for j in range(len(data[i])):
 
 				message = clean(data[i][j].text)
-				message = message.replace('\n', '<nl>')
 				file.write(message)
 				dataset_size += len(message)
 
-				if dataset_size > 0 and len(message) > 0:
+				if dataset_size > 0:
 					file.write('<eom>')
 					dataset_size += 5
 
@@ -70,7 +72,7 @@ def parse_dataset(dataset_path):
 				file.write('<eod>')
 				dataset_size += 5
 
-			if DATASET_MAX_SIZE != None and dataset_size > DATASET_MAX_SIZE:
+			if DATASET_MAX_SIZE != None and dataset_size >= DATASET_MAX_SIZE:
 				break
 
 	print('Importing parsed dataset...')
