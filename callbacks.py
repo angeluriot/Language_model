@@ -32,3 +32,22 @@ class LRScheduler(Callback):
 	def on_batch_end(self, batch, logs = None):
 
 		logs['lr'] = backend.get_value(self.model.optimizer.lr)
+
+
+class LossSaver(Callback):
+
+	def __init__(self, **kwargs):
+
+		super().__init__(**kwargs)
+		self.losses = []
+		self.val_losses = []
+
+
+	def on_epoch_end(self, epoch, logs = {}):
+
+		self.losses.append(logs.get('loss'))
+		self.val_losses.append(logs.get('val_loss'))
+
+		np.save('losses.npy', self.losses)
+		np.save('val_losses.npy', self.val_losses)
+

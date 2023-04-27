@@ -93,16 +93,21 @@ def predict(model, input, tokenizer, max_length, temperature = 1.0, top_p = 1.0,
 	for _ in range(max_length):
 
 		probabilities = model.predict(np.array([input]), verbose = 0)[0, -1]
-		probabilities = np.log(probabilities) / temperature
-		probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
 
-		#sorted_indices = np.argsort(probabilities)[::-1]
-		#cumulative_probabilities = np.cumsum(probabilities[sorted_indices])
-		#sorted_indices = sorted_indices[cumulative_probabilities <= top_p]
-		#probabilities = probabilities[sorted_indices]
-		#probabilities = probabilities / np.sum(probabilities)
+		if temperature < 0.01:
+			index = np.argmax(probabilities)
 
-		index = np.random.choice(range(len(probabilities)), p = probabilities)
+		else:
+			probabilities = np.log(probabilities) / temperature
+			probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
+
+			#sorted_indices = np.argsort(probabilities)[::-1]
+			#cumulative_probabilities = np.cumsum(probabilities[sorted_indices])
+			#sorted_indices = sorted_indices[cumulative_probabilities <= top_p]
+			#probabilities = probabilities[sorted_indices]
+			#probabilities = probabilities / np.sum(probabilities)
+
+			index = np.random.choice(range(len(probabilities)), p = probabilities)
 
 		input = np.append(input, index)
 		output.append(index)
