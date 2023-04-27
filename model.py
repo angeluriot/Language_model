@@ -12,7 +12,11 @@ from utils import *
 
 def create_block(inputs, i):
 
-	model = LayerNormalization(center = USE_BIAS, name = f'block_{i}_layer_norm_1')(inputs)
+	model = LayerNormalization(
+		epsilon = 1e-5,
+		center = USE_BIAS,
+		name = f'block_{i}_layer_norm_1'
+	)(inputs)
 
 	model = MultiHeadAttention(
 		num_heads = NUM_HEADS,
@@ -25,7 +29,11 @@ def create_block(inputs, i):
 
 	model = Add(name = f'block_{i}_skip_1')([model, inputs])
 
-	skip = LayerNormalization(center = USE_BIAS, name = f'block_{i}_layer_norm_2')(model)
+	skip = LayerNormalization(
+		epsilon = 1e-5,
+		center = USE_BIAS,
+		name = f'block_{i}_layer_norm_2'
+	)(model)
 
 	model = Dense(
 		units = FFN_DIM,
@@ -63,7 +71,12 @@ def create_model(vocab_size = VOCAB_SIZE):
 	for i in range(NUM_BLOCKS):
 		model = create_block(model, i)
 
-	model = LayerNormalization(center = USE_BIAS, name = 'final_layer_norm')(model)
+	model = LayerNormalization(
+		epsilon = 1e-5,
+		center = USE_BIAS,
+		name = 'final_layer_norm'
+	)(model)
+
 	model = embedding_layer(model, transpose = True)
 	model = Activation('softmax', name = 'final_softmax')(model)
 
