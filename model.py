@@ -1,16 +1,18 @@
 import tensorflow as tf
-from keras.models import *
+from keras.models import Model
 from keras.layers import *
-from keras.initializers import RandomNormal
+from keras.initializers.initializers_v2 import RandomNormal
+from gradient_accumulator import GradientAccumulateModel
 
 from utils import *
 from layers import *
 from settings import *
 from data import *
 from utils import *
+from tokenizer import Tokenizer
 
 
-def create_block(inputs, i):
+def create_block(inputs, i: int):
 
 	model = LayerNormalization(
 		epsilon = 1e-5,
@@ -22,8 +24,8 @@ def create_block(inputs, i):
 		num_heads = NUM_HEADS,
 		key_dim = EMBEDDING_DIM // NUM_HEADS,
 		dropout = DROPOUT,
-		kernel_initializer = RandomNormal(mean = 0., stddev = INIT_STDDEV),
 		use_bias = USE_BIAS,
+		kernel_initializer = RandomNormal(mean = 0.0, stddev = INIT_STDDEV),
 		name = f'block_{i}_causal_attention'
 	)(model, model, model, use_causal_mask = True)
 
@@ -37,8 +39,8 @@ def create_block(inputs, i):
 
 	model = Dense(
 		units = FFN_DIM,
-		kernel_initializer = RandomNormal(mean = 0., stddev = INIT_STDDEV),
 		use_bias = USE_BIAS,
+		kernel_initializer = RandomNormal(mean = 0.0, stddev = INIT_STDDEV),
 		name = f'block_{i}_FFN_dense_1'
 	)(skip)
 
@@ -46,8 +48,8 @@ def create_block(inputs, i):
 
 	model = Dense(
 		units = EMBEDDING_DIM,
-		kernel_initializer = RandomNormal(mean = 0., stddev = INIT_STDDEV),
 		use_bias = USE_BIAS,
+		kernel_initializer = RandomNormal(mean = 0.0, stddev = INIT_STDDEV),
 		name = f'block_{i}_FFN_dense_2'
 	)(model)
 
@@ -57,9 +59,9 @@ def create_block(inputs, i):
 	return model
 
 
-def create_model(vocab_size = VOCAB_SIZE):
+def create_model(vocab_size: int = VOCAB_SIZE) -> Model | GradientAccumulateModel:
 
-	input = Input(shape = (None,), dtype = tf.int32, name = 'input')
+	input = Input(shape = (None,), dtype = tf.uint16, name = 'input')
 
 	embedding_layer = TokenEmbedding(vocab_size, EMBEDDING_DIM, MAX_CONTEXT, name = 'token_embedding')
 
@@ -82,10 +84,25 @@ def create_model(vocab_size = VOCAB_SIZE):
 
 	model = Model(inputs = input, outputs = model)
 
+	if NUM_ACCUMULATIONS > 1:
+		model = GradientAccumulateModel(accum_steps = NUM_ACCUMULATIONS, inputs = model.input, outputs = model.output)
+
+	for i in range(len(model.weights)):
+		model.weights[i]._handle_name = model.weights[i].name + "_" + str(i)
+
 	return model
 
 
-def predict(model, input, tokenizer, max_length, temperature = 1.0, top_p = 1.0, verbose = False):
+def predict(
+	model: Model | GradientAccumulateModel,
+	input: str,
+	tokenizer: Tokenizer,
+	max_length: int,
+	temperature: float = 1.0,
+	top_p: float = 1.0,
+	no_repeat: float = 0.0,
+	verbose: bool = False
+) -> str:
 
 	input = tokenizer.encode(input)
 	output = []
@@ -93,19 +110,27 @@ def predict(model, input, tokenizer, max_length, temperature = 1.0, top_p = 1.0,
 	for _ in range(max_length):
 
 		probabilities = model.predict(np.array([input]), verbose = 0)[0, -1]
+		probabilities = np.log(probabilities)
+		proximity = MAX_CONTEXT
+
+		for i in reversed(range(max(len(input) - MAX_CONTEXT, 0), len(input))):
+			strength = no_repeat * (proximity / MAX_CONTEXT)
+			probabilities[input[i]] *= (1 + strength)
+			proximity -= 1
 
 		if temperature < 0.01:
 			index = np.argmax(probabilities)
 
 		else:
-			probabilities = np.log(probabilities) / temperature
+			probabilities /= temperature
 			probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
 
-			#sorted_indices = np.argsort(probabilities)[::-1]
-			#cumulative_probabilities = np.cumsum(probabilities[sorted_indices])
-			#sorted_indices = sorted_indices[cumulative_probabilities <= top_p]
-			#probabilities = probabilities[sorted_indices]
-			#probabilities = probabilities / np.sum(probabilities)
+			sorted_indices = np.argsort(-probabilities)
+			cumsum_probabilites = np.cumsum(probabilities[sorted_indices])
+			cutoff_index = np.searchsorted(cumsum_probabilites, max(top_p, cumsum_probabilites[0] + 1e-6))
+			temp = np.zeros_like(probabilities)
+			temp[sorted_indices[:cutoff_index]] = probabilities[sorted_indices[:cutoff_index]]
+			probabilities = temp / np.sum(temp)
 
 			index = np.random.choice(range(len(probabilities)), p = probabilities)
 

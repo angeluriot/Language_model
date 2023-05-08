@@ -1,5 +1,6 @@
 import os, pickle
 import numpy as np
+import numpy.typing as npt
 import tokenizers as tk
 from tokenizers.models import *
 from tokenizers.trainers import *
@@ -12,7 +13,7 @@ from settings import *
 
 class Tokenizer:
 
-	def __init__(self, dataset):
+	def __init__(self, dataset: str):
 
 		self.vocab = []
 		self.to_index = {}
@@ -32,7 +33,7 @@ class Tokenizer:
 			pickle.dump(self.vocab, open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'wb'))
 
 
-	def create_vocab(self):
+	def create_vocab(self) -> None:
 
 		print('Creating vocab...')
 		tokenizer = tk.Tokenizer(BPE(unk_token = CONTROL_CHARS[-1]))
@@ -55,7 +56,7 @@ class Tokenizer:
 		print('Max token length:', self.max_token_length)
 
 
-	def sort_vocab(self, dataset):
+	def sort_vocab(self, dataset: str) -> None:
 
 		print('Pretokenize...')
 		data = mypretk.split(dataset)
@@ -101,7 +102,7 @@ class Tokenizer:
 		self.max_token_length = max([len(v) for v in self.vocab])
 
 
-	def encode(self, text, verbose = False):
+	def encode(self, text: str, verbose: bool = False) -> npt.NDArray[np.uint16]:
 
 		if verbose:
 			print('Pretokenize...')
@@ -149,9 +150,14 @@ class Tokenizer:
 		return np.array(output, dtype = np.int32)
 
 
-	def decode(self, tokens, keep_token_names = False, token_array = False):
+	def decode(
+		self,
+		tokens: npt.NDArray[np.uint16] | list[np.uint16] | list[int] | np.uint16 | int,
+		keep_token_names: bool = False,
+		token_array: bool = False
+	) -> str | list[str]:
 
-		if type(tokens) == int or type(tokens) == np.int16 or type(tokens) == np.int32 or type(tokens) == np.int64:
+		if type(tokens) == int or type(tokens) == np.uint16:
 			tokens = [tokens]
 		elif type(tokens) != list:
 			tokens = list(tokens)
@@ -173,9 +179,9 @@ class Tokenizer:
 				elif t == self.to_index['<unk>']:
 					text.append('�')
 				elif t == self.to_index['<eom>']:
-					text.append('\n\n<<< END OF MESSAGE >>>\n\n')
+					text.append('\n\n<< END OF MESSAGE >>\n\n')
 				elif t == self.to_index['<eod>']:
-					text.append('\n\n<<< END OF DIALOGUE >>>\n\n')
+					text.append('\n\n<<<<<<<<<< END OF DIALOGUE >>>>>>>>>>\n\n')
 				else:
 					text.append(self.to_token[t])
 

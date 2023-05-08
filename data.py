@@ -1,10 +1,12 @@
 import os, random
 import numpy as np
+import numpy.typing as npt
 import xml.etree.ElementTree as ET
 
 from settings import *
 
-def clean(text):
+
+def clean(text: str) -> str:
 
 	text = text.strip()
 	text = text.replace('’', "'"); text = text.replace('‘', "'"); text = text.replace('“', '"'); text = text.replace('”', '"'); text = text.replace('„', '"'); text = text.replace('´', "'"); text = text.replace('`', "'"); text = text.replace('ʹ', "'")
@@ -39,7 +41,7 @@ def clean(text):
 	return text
 
 
-def parse_dataset(dataset_path):
+def parse_dataset(dataset_path: str) -> str:
 
 	if not os.path.exists(PROCESSED_DATA_DIR):
 		os.makedirs(PROCESSED_DATA_DIR)
@@ -58,19 +60,22 @@ def parse_dataset(dataset_path):
 		print('Parsing dataset...')
 
 		for i in range(len(data)):
+
+			dialog = ''
+
 			for j in range(len(data[i])):
 
-				message = clean(data[i][j].text)
-				file.write(message)
-				dataset_size += len(message)
+				dialog += clean(data[i][j].text)
 
-				if dataset_size > 0:
-					file.write('<eom>')
-					dataset_size += 5
+				if len(dialog) > 0:
+					dialog += '<eom>'
 
-			if dataset_size > 0:
-				file.write('<eod>')
-				dataset_size += 5
+			if len(dialog) > 0:
+				dialog += '<eod>'
+
+			dialog = dialog.replace('<eom><eod>', '<eod>')
+			file.write(dialog)
+			dataset_size += len(dialog)
 
 			if DATASET_MAX_SIZE != None and dataset_size >= DATASET_MAX_SIZE:
 				break
@@ -79,16 +84,21 @@ def parse_dataset(dataset_path):
 	return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
 
 
+def split_dataset(dataset: npt.NDArray[np.uint16]) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]:
 
-def split_dataset(dataset):
+	if not os.path.exists(OUTPUT_DIR):
+		os.makedirs(OUTPUT_DIR)
+
+	if os.path.exists(os.path.join(OUTPUT_DIR, 'train_indexes.npy')) and os.path.exists(os.path.join(OUTPUT_DIR, 'val_indexes.npy')):
+		return np.load(os.path.join(OUTPUT_DIR, 'train_indexes.npy')), np.load(os.path.join(OUTPUT_DIR, 'val_indexes.npy'))
 
 	sub_val_size = int((len(dataset) * VAL_RATIO) / NUM_VAL_PARTS)
 	train_indexes = []
 	val_indexes = []
-	val_start_indexes = [random.randint(2 * MAX_CONTEXT, len(dataset) - sub_val_size - 3 * MAX_CONTEXT) for _ in range(NUM_VAL_PARTS)]
+	val_start_indexes = [random.randint(3 * MAX_CONTEXT, len(dataset) - sub_val_size - 6 * MAX_CONTEXT) for _ in range(NUM_VAL_PARTS)]
 	i = 0
 
-	while i < len(dataset) - MAX_CONTEXT:
+	while i < len(dataset) - 3 * MAX_CONTEXT:
 
 		if (i + MAX_CONTEXT - 1) in val_start_indexes:
 			i += MAX_CONTEXT - 1
@@ -100,4 +110,10 @@ def split_dataset(dataset):
 		train_indexes.append(i)
 		i += 1
 
-	return np.array(train_indexes, dtype = np.int32), np.array(val_indexes, dtype = np.int32)
+	train_indexes = np.array(train_indexes, dtype = np.uint64)
+	val_indexes = np.array(val_indexes, dtype = np.uint64)
+
+	np.save(os.path.join(OUTPUT_DIR, 'train_indexes.npy'), train_indexes)
+	np.save(os.path.join(OUTPUT_DIR, 'val_indexes.npy'), val_indexes)
+
+	return train_indexes, val_indexes

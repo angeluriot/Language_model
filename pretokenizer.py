@@ -1,9 +1,10 @@
 import regex
+
 from tokenizers import *
 from settings import *
 
 
-def split(text):
+def split(text: str) -> list[str]:
 
 	# Split in words
 
@@ -41,7 +42,7 @@ def split(text):
 
 class PreTokenizer:
 
-	def split(self, i: int, normalized_string: NormalizedString):
+	def split(self, i: int, normalized_string: NormalizedString) -> list[NormalizedString]:
 
 		print('Pretokenize...')
 
@@ -54,5 +55,6 @@ class PreTokenizer:
 		return words
 
 
-	def pre_tokenize(self, pretok: PreTokenizedString):
+	def pre_tokenize(self, pretok: PreTokenizedString) -> None:
+
 		pretok.split(self.split)

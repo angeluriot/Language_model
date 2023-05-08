@@ -1,12 +1,14 @@
 import random
 import numpy as np
-from keras.utils import *
+import numpy.typing as npt
+from keras.utils import Sequence
+
 from settings import *
 
 
 class BatchGenerator(Sequence):
 
-	def __init__(self, dataset, indexes, size):
+	def __init__(self, dataset: npt.NDArray[np.uint16], indexes: npt.NDArray[np.uint64], size: int):
 
 		self.dataset = dataset
 		self.indexes = indexes
@@ -18,14 +20,13 @@ class BatchGenerator(Sequence):
 		return self.size
 
 
-	def __getitem__(self, idx):
+	def __getitem__(self, idx: int) -> tuple[npt.NDArray[np.uint16], npt.NDArray[np.uint16]]:
 
-		x = np.zeros((BATCH_SIZE, MAX_CONTEXT), dtype = np.int32)
-		y = np.zeros((BATCH_SIZE, MAX_CONTEXT), dtype = np.int32)
-		starts = np.random.choice(self.indexes, BATCH_SIZE)
+		x = np.zeros((BATCH_SIZE, MAX_CONTEXT), dtype = np.uint16)
+		y = np.zeros((BATCH_SIZE, MAX_CONTEXT), dtype = np.uint16)
 
-		for i, start in enumerate(starts):
-			start = self.indexes[random.randint(0, len(self.indexes) - 1)]
+		for i in range(BATCH_SIZE):
+			start = int(self.indexes[random.randint(0, len(self.indexes) - 1)])
 			x[i, :] = self.dataset[start: start + MAX_CONTEXT]
 			y[i, :] = self.dataset[start + 1: start + MAX_CONTEXT + 1]
 

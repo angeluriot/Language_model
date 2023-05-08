@@ -1,13 +1,14 @@
-import math
+import math, typing
 import tensorflow as tf
-from keras.layers import *
-from keras.initializers import RandomNormal
+from keras.layers import Layer
+from keras.initializers.initializers_v2 import RandomNormal
+
 from settings import *
 
 
 class TokenEmbedding(Layer):
 
-	def __init__(self, vocab_size, embedding_dim, max_context, padding_token = None, **kwargs):
+	def __init__(self, vocab_size: int, embedding_dim: int, max_context: int, padding_token: int | None = None, **kwargs):
 
 		super().__init__(**kwargs)
 		self.vocab_size = vocab_size
@@ -16,7 +17,7 @@ class TokenEmbedding(Layer):
 		self.padding_token = padding_token
 
 
-	def get_config(self):
+	def get_config(self) -> dict[str, typing.Any]:
 
 		config = super().get_config().copy()
 
@@ -30,27 +31,27 @@ class TokenEmbedding(Layer):
 		return config
 
 
-	def build(self, input_shape):
+	def build(self, input_shape) -> None:
 
 		super().build(input_shape)
 
 		self.embedding_matrix = self.add_weight(
 			shape = (self.vocab_size, self.embedding_dim),
-			initializer = RandomNormal(mean = 0., stddev = INIT_STDDEV),
+			initializer = RandomNormal(mean = 0.0, stddev = INIT_STDDEV),
 			trainable = True,
 			dtype = tf.float32,
 			name = self.name + '_(embedding_matrix)'
 		)
 
 
-	def call(self, inputs, transpose = False):
+	def call(self, inputs, transpose: bool = False):
 
 		if not transpose:
 
 			if tf.shape(inputs)[1] > self.max_context:
 				inputs = inputs[:, -self.max_context:]
 
-			embedding = tf.nn.embedding_lookup(self.embedding_matrix, inputs)
+			embedding = tf.nn.embedding_lookup(self.embedding_matrix, tf.cast(inputs, tf.int32))
 
 			if self.padding_token is not None:
 				mask = tf.cast(tf.not_equal(inputs, self.padding_token), tf.float32)
@@ -67,7 +68,7 @@ class TokenEmbedding(Layer):
 
 class PositionEmbedding(Layer):
 
-	def __init__(self, max_context, embedding_dim, padding_token = None, **kwargs):
+	def __init__(self, max_context: int, embedding_dim: int, padding_token: int | None = None, **kwargs):
 
 		super().__init__(**kwargs)
 		self.max_context = max_context
@@ -75,7 +76,7 @@ class PositionEmbedding(Layer):
 		self.padding_token = padding_token
 
 
-	def get_config(self):
+	def get_config(self) -> dict[str, typing.Any]:
 
 		config = super().get_config().copy()
 
@@ -88,13 +89,13 @@ class PositionEmbedding(Layer):
 		return config
 
 
-	def build(self, input_shape):
+	def build(self, input_shape) -> None:
 
 		super().build(input_shape)
 
 		self.embedding_matrix = self.add_weight(
 			shape = (self.max_context, self.embedding_dim),
-			initializer = RandomNormal(mean = 0., stddev = INIT_STDDEV),
+			initializer = RandomNormal(mean = 0.0, stddev = INIT_STDDEV),
 			trainable = True,
 			dtype = tf.float32,
 			name = self.name + '_(embedding_matrix)'

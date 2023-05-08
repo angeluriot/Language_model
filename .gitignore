@@ -1,11 +1,9 @@
 bacup
 data
 venv
-model.h5
+output
 notes.txt
 final_SPF.xml
 __pycache__
 .DS_Store
 env.py
-losses.npy
-val_losses.npy
