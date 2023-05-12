@@ -3,13 +3,13 @@ from keras.models import Model
 from keras.layers import *
 from keras.initializers.initializers_v2 import RandomNormal
 from gradient_accumulator import GradientAccumulateModel
+import tiktoken
 
 from utils import *
 from layers import *
 from settings import *
 from data import *
 from utils import *
-from tokenizer import Tokenizer
 
 
 def create_block(inputs, i: int):
@@ -59,11 +59,11 @@ def create_block(inputs, i: int):
 	return model
 
 
-def create_model(vocab_size: int = VOCAB_SIZE) -> Model | GradientAccumulateModel:
+def create_model() -> Model | GradientAccumulateModel:
 
 	input = Input(shape = (None,), dtype = tf.uint16, name = 'input')
 
-	embedding_layer = TokenEmbedding(vocab_size, EMBEDDING_DIM, MAX_CONTEXT, name = 'token_embedding')
+	embedding_layer = TokenEmbedding(VOCAB_SIZE, EMBEDDING_DIM, MAX_CONTEXT, name = 'token_embedding')
 
 	token_embedding = embedding_layer(input)
 	position_embedding = PositionEmbedding(MAX_CONTEXT, EMBEDDING_DIM, name = 'position_embedding')(input)
@@ -93,23 +93,30 @@ def create_model(vocab_size: int = VOCAB_SIZE) -> Model | GradientAccumulateMode
 	return model
 
 
-def predict(
-	model: Model | GradientAccumulateModel,
-	input: str,
-	tokenizer: Tokenizer,
-	max_length: int,
-	temperature: float = 1.0,
-	top_p: float = 1.0,
-	no_repeat: float = 0.0,
-	verbose: bool = False
-) -> str:
+def predict(model: Model | GradientAccumulateModel, input: str, max_length: int, keep_input = False,
+	temperature: float = 1.0, top_p: float = 1.0, no_repeat: float = 0.0, verbose: bool = False, max_print_line_length = 0) -> str:
 
-	input = tokenizer.encode(input)
+	tokenizer = tiktoken.get_encoding('gpt2')
+	input = tokenizer.encode_ordinary(input)
+
+	if len(input) == 0:
+		input = [tokenizer.eot_token]
+	elif input[0] != tokenizer.eot_token:
+		input = [tokenizer.eot_token] + input
+
 	output = []
+	to_print = []
+	last_line_length = 0
+
+	if keep_input:
+		output = input[1:].copy()
+		to_print = input[1:].copy()
+		text = tokenizer.decode(to_print)
+		last_line_length = len(text) - 1 - text.rfind('\n')
 
 	for _ in range(max_length):
 
-		probabilities = model.predict(np.array([input]), verbose = 0)[0, -1]
+		probabilities = model.predict(np.array([input], dtype = np.uint16), verbose = 0)[0, -1]
 		probabilities = np.log(probabilities)
 		proximity = MAX_CONTEXT
 
@@ -134,10 +141,28 @@ def predict(
 
 			index = np.random.choice(range(len(probabilities)), p = probabilities)
 
-		input = np.append(input, index)
+		input.append(index)
 		output.append(index)
+		to_print.append(index)
 
 		if verbose:
-			print(tokenizer.decode(index), end = '')
 
-	return tokenizer.decode(output)
+			text = tokenizer.decode(to_print)
+			text = text.replace(',”', '”,').replace(',"', '",')
+
+			if is_printable(text):
+
+				if '\n' in text:
+					last_line_length = len(text) - 1 - text.rfind('\n')
+				else:
+					last_line_length += len(text)
+
+				if max_print_line_length > 0 and last_line_length >= max_print_line_length and text.startswith(' '):
+					print()
+					text = text[1:]
+					last_line_length = 0
+
+				print(text, end = '')
+				to_print = []
+
+	return tokenizer.decode(output).replace(',”', '”,').replace(',"', '",')
