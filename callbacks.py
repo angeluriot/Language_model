@@ -1,8 +1,8 @@
 import os, pickle, typing
 from keras import backend
-from keras.models import Model
 from keras.callbacks import Callback
 
+from utils import *
 from settings import *
 
 
@@ -43,6 +43,9 @@ class SaveModel(Callback):
 		super().__init__(**kwargs)
 		self.best_val_loss = float('inf')
 
+		if not os.path.exists(OUTPUT_DIR):
+			os.makedirs(OUTPUT_DIR)
+
 		if os.path.exists(os.path.join(OUTPUT_DIR, 'logs.pkl')):
 			logs = pickle.load(open(os.path.join(OUTPUT_DIR, 'logs.pkl'), 'rb'))
 			self.best_val_loss = min(logs['val_loss'])
@@ -51,6 +54,7 @@ class SaveModel(Callback):
 	def on_epoch_end(self, epoch: int, logs: dict[str, typing.Any] = {}) -> None:
 
 		self.model.save_weights(os.path.join(OUTPUT_DIR, 'model.h5'))
+		save_state(self.model.optimizer, os.path.join(OUTPUT_DIR, 'optimizer.pkl'))
 
 		if logs['val_loss'] <= self.best_val_loss:
 			self.best_val_loss = logs['val_loss']
@@ -72,6 +76,9 @@ class SaveLogs(Callback):
 			'epochs': [],
 			'tokens': []
 		}
+
+		if not os.path.exists(OUTPUT_DIR):
+			os.makedirs(OUTPUT_DIR)
 
 		if os.path.exists(os.path.join(OUTPUT_DIR, 'logs.pkl')):
 			self.logs = pickle.load(open(os.path.join(OUTPUT_DIR, 'logs.pkl'), 'rb'))

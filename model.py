@@ -93,23 +93,21 @@ def create_model(vocab_size: int = VOCAB_SIZE) -> Model | GradientAccumulateMode
 	return model
 
 
-def predict(
-	model: Model | GradientAccumulateModel,
-	input: str,
-	tokenizer: Tokenizer,
-	max_length: int,
-	temperature: float = 1.0,
-	top_p: float = 1.0,
-	no_repeat: float = 0.0,
-	verbose: bool = False
-) -> str:
+def predict(model: Model | GradientAccumulateModel, input: str, tokenizer: Tokenizer, max_length: int, keep_input = False,
+	temperature: float = 1.0, top_p: float = 1.0, no_repeat: float = 0.0, verbose: bool = False, max_print_line_length = 0) -> str:
 
-	input = tokenizer.encode(input)
+	input = list(tokenizer.encode(input))
 	output = []
+	last_line_length = 0
+
+	if keep_input:
+		output = input.copy()
+		text = tokenizer.decode(input)
+		last_line_length = len(text) - 1 - text.rfind('\n')
 
 	for _ in range(max_length):
 
-		probabilities = model.predict(np.array([input]), verbose = 0)[0, -1]
+		probabilities = model.predict(np.array([input], dtype = np.uint16), verbose = 0)[0, -1]
 		probabilities = np.log(probabilities)
 		proximity = MAX_CONTEXT
 
@@ -134,10 +132,23 @@ def predict(
 
 			index = np.random.choice(range(len(probabilities)), p = probabilities)
 
-		input = np.append(input, index)
+		input.append(index)
 		output.append(index)
 
 		if verbose:
-			print(tokenizer.decode(index), end = '')
+
+			text = tokenizer.decode(input)
+
+			if '\n' in text:
+				last_line_length = len(text) - 1 - text.rfind('\n')
+			else:
+				last_line_length += len(text)
+
+			if max_print_line_length > 0 and last_line_length >= max_print_line_length and text.startswith(' '):
+				print()
+				text = text[1:]
+				last_line_length = 0
+
+			print(text, end = '')
 
 	return tokenizer.decode(output)

@@ -86,11 +86,8 @@ def parse_dataset(dataset_path: str) -> str:
 
 def split_dataset(dataset: npt.NDArray[np.uint16]) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]:
 
-	if not os.path.exists(OUTPUT_DIR):
-		os.makedirs(OUTPUT_DIR)
-
-	if os.path.exists(os.path.join(OUTPUT_DIR, 'train_indexes.npy')) and os.path.exists(os.path.join(OUTPUT_DIR, 'val_indexes.npy')):
-		return np.load(os.path.join(OUTPUT_DIR, 'train_indexes.npy')), np.load(os.path.join(OUTPUT_DIR, 'val_indexes.npy'))
+	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy')) and os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy')):
+		return np.load(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy')), np.load(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy'))
 
 	sub_val_size = int((len(dataset) * VAL_RATIO) / NUM_VAL_PARTS)
 	train_indexes = []
@@ -113,7 +110,7 @@ def split_dataset(dataset: npt.NDArray[np.uint16]) -> tuple[npt.NDArray[np.uint6
 	train_indexes = np.array(train_indexes, dtype = np.uint64)
 	val_indexes = np.array(val_indexes, dtype = np.uint64)
 
-	np.save(os.path.join(OUTPUT_DIR, 'train_indexes.npy'), train_indexes)
-	np.save(os.path.join(OUTPUT_DIR, 'val_indexes.npy'), val_indexes)
+	np.save(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy'), train_indexes)
+	np.save(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy'), val_indexes)
 
 	return train_indexes, val_indexes
