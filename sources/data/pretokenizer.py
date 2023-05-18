@@ -6,6 +6,9 @@ from settings import *
 
 def split(text: str) -> list[str]:
 
+	if text == '':
+		return []
+
 	# Split in words
 
 	reg = r'(' + r'|'.join(CONTROL_CHARS) + r'|\d+|\s+|\p{L}+|[^\d\p{L}\s' + r''.join([f'[{i}]' for i in CONTROL_CHARS]) + r']+)'

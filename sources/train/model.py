@@ -5,11 +5,11 @@ from keras.initializers.initializers_v2 import RandomNormal
 from gradient_accumulator import GradientAccumulateModel
 
 from utils import *
-from layers import *
+from train.layers import *
 from settings import *
-from data import *
+from data.data import *
 from utils import *
-from tokenizer import Tokenizer
+from data.tokenizer import Tokenizer
 
 
 def create_block(inputs, i: int):

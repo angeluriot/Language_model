@@ -1,7 +1,7 @@
-import os, random
+import os, random, pickle
 import numpy as np
 import numpy.typing as npt
-import xml.etree.ElementTree as ET
+from datasets import load_dataset
 
 from settings import *
 
@@ -38,56 +38,51 @@ def clean(text: str) -> str:
 
 	text = text.replace('\n', '<nl>')
 
+	if len(text) >= 2 and text[0] == '-' and text[1].isalpha():
+		text = '- ' + text[1:]
+
 	return text
 
 
-def parse_dataset(dataset_path: str) -> str:
+def import_dataset() -> str:
 
-	if not os.path.exists(PROCESSED_DATA_DIR):
-		os.makedirs(PROCESSED_DATA_DIR)
+	return load_dataset('cc100', lang = 'fr', num_proc = NUM_THREADS)
 
-	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')):
-		print('Importing parsed dataset...')
-		return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
+	'''
+	dataset_size = 0
 
-	with open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'w', encoding = 'utf-8') as file:
+	print('Parsing dataset...')
 
-		print('Importing dataset...')
-		data = ET.parse(dataset_path).getroot()
-		file.truncate(0)
-		dataset_size = 0
+	for i in range(len(data)):
 
-		print('Parsing dataset...')
+		dialog = ''
 
-		for i in range(len(data)):
+		for j in range(len(data[i])):
 
-			dialog = ''
-
-			for j in range(len(data[i])):
-
-				dialog += clean(data[i][j].text)
-
-				if len(dialog) > 0:
-					dialog += '<eom>'
+			dialog += clean(data[i][j].text)
 
 			if len(dialog) > 0:
-				dialog += '<eod>'
+				dialog += '<eom>'
 
-			dialog = dialog.replace('<eom><eod>', '<eod>')
-			file.write(dialog)
-			dataset_size += len(dialog)
+		if len(dialog) > 0:
+			dialog += '<eot>'
 
-			if DATASET_MAX_SIZE != None and dataset_size >= DATASET_MAX_SIZE:
-				break
+		dialog = dialog.replace('<eom><eot>', '<eot>')
+		file.write(dialog)
+		dataset_size += len(dialog)
+
+		if DATASET_MAX_SIZE != None and dataset_size >= DATASET_MAX_SIZE:
+			break
 
 	print('Importing parsed dataset...')
-	return open(os.path.join(PROCESSED_DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
+	return open(os.path.join(DATA_DIR, 'dataset.txt'), 'r', encoding = 'utf-8').read().strip()
+	'''
 
 
 def split_dataset(dataset: npt.NDArray[np.uint16]) -> tuple[npt.NDArray[np.uint64], npt.NDArray[np.uint64]]:
 
-	if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy')) and os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy')):
-		return np.load(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy')), np.load(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy'))
+	if os.path.exists(os.path.join(DATA_DIR, 'train_indexes.npy')) and os.path.exists(os.path.join(DATA_DIR, 'val_indexes.npy')):
+		return np.load(os.path.join(DATA_DIR, 'train_indexes.npy')), np.load(os.path.join(DATA_DIR, 'val_indexes.npy'))
 
 	sub_val_size = int((len(dataset) * VAL_RATIO) / NUM_VAL_PARTS)
 	train_indexes = []
@@ -110,7 +105,7 @@ def split_dataset(dataset: npt.NDArray[np.uint16]) -> tuple[npt.NDArray[np.uint6
 	train_indexes = np.array(train_indexes, dtype = np.uint64)
 	val_indexes = np.array(val_indexes, dtype = np.uint64)
 
-	np.save(os.path.join(PROCESSED_DATA_DIR, 'train_indexes.npy'), train_indexes)
-	np.save(os.path.join(PROCESSED_DATA_DIR, 'val_indexes.npy'), val_indexes)
+	np.save(os.path.join(DATA_DIR, 'train_indexes.npy'), train_indexes)
+	np.save(os.path.join(DATA_DIR, 'val_indexes.npy'), val_indexes)
 
 	return train_indexes, val_indexes

@@ -1,5 +1,4 @@
 bacup
-data
 venv
 output
 notes.txt
@@ -7,3 +6,4 @@ final_SPF.xml
 __pycache__
 .DS_Store
 env.py
+tests.ipynb

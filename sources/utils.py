@@ -1,10 +1,31 @@
-import pickle
+import sys, pickle
 import tensorflow as tf
 from keras import backend
 from keras.optimizers import Optimizer
 from gradient_accumulator import GradientAccumulateModel
 
 from settings import *
+
+
+def save_text_array(array: list, path: str) -> None:
+
+	with open(path, 'w') as f:
+
+		f.truncate(0)
+
+		for i in range(len(array)):
+
+			f.write(array[i])
+
+			if i != len(array) - 1:
+				f.write('\n')
+
+
+def load_text_array(path: str) -> list:
+
+	with open(path, 'r') as f:
+
+		return f.read().split('\n')
 
 
 def print_tokens(tokens: list[str]) -> None:
@@ -52,3 +73,4 @@ def reset_accumulator(model: GradientAccumulateModel) -> None:
 			tf.zeros_like(model.trainable_variables[i], dtype = model.dtype_value),
 			read_value = False,
 		)
+

@@ -1,44 +1,49 @@
-import os, pickle
+import os
 import numpy as np
 import numpy.typing as npt
 import tokenizers as tk
-from tokenizers.models import *
-from tokenizers.trainers import *
-from tokenizers.pre_tokenizers import *
-from tokenizers.normalizers import *
+from tokenizers.models import BPE
+from tokenizers.trainers import BpeTrainer
+from tokenizers.pre_tokenizers import PreTokenizer
+from tokenizers.normalizers import BertNormalizer
+from tqdm import tqdm
 
-import pretokenizer as mypretk
-from settings import *
+import sources.data.pretokenizer as my_pretokenizer
+from sources.settings import *
 
 
 class Tokenizer:
 
-	def __init__(self, dataset: str):
+	def __init__(self):
 
-		self.vocab = []
-		self.to_index = {}
-		self.to_token = {}
-		self.max_token_length = 0
-
-		if os.path.exists(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl')):
-			print('Loading vocab...')
-			self.vocab = pickle.load(open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'rb'))
-			self.to_index = {v: i for i, v in enumerate(self.vocab)}
-			self.to_token = {i: v for i, v in enumerate(self.vocab)}
-			self.max_token_length = max([len(v) for v in self.vocab])
-
-		else:
-			self.create_vocab()
-			self.sort_vocab(dataset)
-			pickle.dump(self.vocab, open(os.path.join(PROCESSED_DATA_DIR, 'vocab.pkl'), 'wb'))
+		self.vocab: list[str] = []
+		self.to_index: dict[str, int] = {}
+		self.to_token: dict[int, str] = {}
+		self.max_token_length: int = 0
 
 
-	def create_vocab(self) -> None:
+	def load_from_vocab(self, vocab: list[str]) -> None:
+
+		self.vocab = vocab.copy()
+		self.to_index = {v: i for i, v in enumerate(self.vocab)}
+		self.to_token = {i: v for i, v in enumerate(self.vocab)}
+		self.max_token_length = max([len(v) for v in self.vocab])
+
+
+	def create(self, data_path: str) -> None:
+
+		self._create_vocab(data_path)
+		dataset = open(data_path, 'r').read()
+		self._sort_vocab(dataset)
+
+
+	def _create_vocab(self, data_path: str) -> None:
 
 		print('Creating vocab...')
+
 		tokenizer = tk.Tokenizer(BPE(unk_token = CONTROL_CHARS[-1]))
 		tokenizer.normalizer = BertNormalizer(strip_accents = False, lowercase = False)
-		tokenizer.pre_tokenizer = PreTokenizer.custom(mypretk.PreTokenizer())
+		tokenizer.pre_tokenizer = PreTokenizer.custom(my_pretokenizer.PreTokenizer())
 
 		trainer = BpeTrainer(
 			vocab_size = VOCAB_SIZE,
@@ -46,7 +51,7 @@ class Tokenizer:
 			special_tokens = CONTROL_CHARS
 		)
 
-		tokenizer.train([os.path.join(PROCESSED_DATA_DIR, 'dataset.txt')], trainer)
+		tokenizer.train([os.path.join(DATA_DIR, data_path)], trainer)
 
 		self.vocab = tokenizer.get_vocab().keys()
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
@@ -56,18 +61,15 @@ class Tokenizer:
 		print('Max token length:', self.max_token_length)
 
 
-	def sort_vocab(self, dataset: str) -> None:
+	def _sort_vocab(self, dataset: str) -> None:
 
 		print('Pretokenize...')
-		data = mypretk.split(dataset)
+		data = my_pretokenizer.split(dataset)
 
 		print('Sorting vocab...')
 		vocab = {v: 0 for v in self.vocab}
 
-		for i in range(len(data)):
-
-			if i % int(len(data) / 100) == 0:
-				print('Progress:', str(int((i / len(data)) * 100)) + '%               ', end = '\r')
+		for i in tqdm(range(len(data))):
 
 			if data[i] in self.to_index:
 				vocab[data[i]] += 1
@@ -94,7 +96,6 @@ class Tokenizer:
 
 				j += 1
 
-		print('Progress: 100%               ')
 		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
 		self.vocab = [v[0] for v in self.vocab if v[1] > 0]
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
@@ -107,17 +108,14 @@ class Tokenizer:
 		if verbose:
 			print('Pretokenize...')
 
-		data = mypretk.split(text)
+		data = my_pretokenizer.split(text)
 
 		if verbose:
 			print('Encoding dataset...')
 
 		output = []
 
-		for i in range(len(data)):
-
-			if verbose and i % int(len(data) / 100) == 0:
-				print('Progress:', str(int((i / len(data)) * 100)) + '%               ', end = '\r')
+		for i in tqdm(range(len(data)), disable = not verbose):
 
 			if data[i] in self.to_index:
 				output.append(self.to_index[data[i]])
@@ -144,10 +142,7 @@ class Tokenizer:
 
 				j += 1
 
-		if verbose:
-			print('Progress: 100%               ')
-
-		return np.array(output, dtype = np.int32)
+		return np.array(output, dtype = np.uint16)
 
 
 	def decode(
@@ -179,9 +174,9 @@ class Tokenizer:
 				elif t == self.to_index['<unk>']:
 					text.append('�')
 				elif t == self.to_index['<eom>']:
-					text.append('\n\n<< END OF MESSAGE >>\n\n')
-				elif t == self.to_index['<eod>']:
-					text.append('\n\n<<<<<<<<<< END OF DIALOGUE >>>>>>>>>>\n\n')
+					text.append('\n\n<<< END OF MESSAGE >>>\n\n')
+				elif t == self.to_index['<eot>']:
+					text.append('\n\n<<<<<<<<<<<<<<< END OF TEXT >>>>>>>>>>>>>>>\n\n')
 				else:
 					text.append(self.to_token[t])
 
