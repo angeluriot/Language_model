@@ -1,7 +1,7 @@
 import regex
 
 from tokenizers import *
-from settings import *
+from gpt.settings import *
 
 
 def split(text: str) -> list[str]:

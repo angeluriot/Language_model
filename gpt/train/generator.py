@@ -3,15 +3,14 @@ import numpy as np
 import numpy.typing as npt
 from keras.utils import Sequence
 
-from settings import *
+from gpt.settings import *
 
 
 class BatchGenerator(Sequence):
 
-	def __init__(self, dataset: npt.NDArray[np.uint16], indexes: npt.NDArray[np.uint64], size: int):
+	def __init__(self, data: npt.NDArray[np.uint16], size: int):
 
-		self.dataset = dataset
-		self.indexes = indexes
+		self.data = data
 		self.size = size
 
 
@@ -26,8 +25,8 @@ class BatchGenerator(Sequence):
 		y = np.zeros((BATCH_SIZE, MAX_CONTEXT), dtype = np.uint16)
 
 		for i in range(BATCH_SIZE):
-			start = int(self.indexes[random.randint(0, len(self.indexes) - 1)])
-			x[i, :] = self.dataset[start: start + MAX_CONTEXT]
-			y[i, :] = self.dataset[start + 1: start + MAX_CONTEXT + 1]
+			start = random.randint(0, len(self.data) - MAX_CONTEXT - 2)
+			x[i, :] = self.data[start:start + MAX_CONTEXT]
+			y[i, :] = self.data[start + 1:start + MAX_CONTEXT + 1]
 
 		return x, y

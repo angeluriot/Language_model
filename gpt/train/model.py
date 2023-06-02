@@ -1,18 +1,18 @@
 import tensorflow as tf
+import numpy as np
+from keras.engine.keras_tensor import KerasTensor
 from keras.models import Model
 from keras.layers import *
 from keras.initializers.initializers_v2 import RandomNormal
 from gradient_accumulator import GradientAccumulateModel
 
-from utils import *
-from train.layers import *
-from settings import *
-from data.data import *
-from utils import *
-from data.tokenizer import Tokenizer
+from gpt.utils import *
+from gpt.train.layers import *
+from gpt.settings import *
+from gpt.data.tokenizer import Tokenizer
 
 
-def create_block(inputs, i: int):
+def create_block(inputs: KerasTensor, i: int):
 
 	model = LayerNormalization(
 		epsilon = 1e-5,
@@ -97,12 +97,20 @@ def predict(model: Model | GradientAccumulateModel, input: str, tokenizer: Token
 	temperature: float = 1.0, top_p: float = 1.0, no_repeat: float = 0.0, verbose: bool = False, max_print_line_length = 0) -> str:
 
 	input = list(tokenizer.encode(input))
+	eot = tokenizer.encode('<eot>')[0]
 	output = []
+	to_print = []
 	last_line_length = 0
 
+	if len(input) == 0:
+		input = [eot]
+	elif input[0] != eot:
+		input = [eot] + input
+
 	if keep_input:
-		output = input.copy()
-		text = tokenizer.decode(input)
+		output = input[1:].copy()
+		to_print = input[1:].copy()
+		text = tokenizer.decode(to_print)
 		last_line_length = len(text) - 1 - text.rfind('\n')
 
 	for _ in range(max_length):
@@ -134,10 +142,11 @@ def predict(model: Model | GradientAccumulateModel, input: str, tokenizer: Token
 
 		input.append(index)
 		output.append(index)
+		to_print.append(index)
 
 		if verbose:
 
-			text = tokenizer.decode(input)
+			text = tokenizer.decode(to_print)
 
 			if '\n' in text:
 				last_line_length = len(text) - 1 - text.rfind('\n')
@@ -150,5 +159,6 @@ def predict(model: Model | GradientAccumulateModel, input: str, tokenizer: Token
 				last_line_length = 0
 
 			print(text, end = '')
+			to_print = []
 
 	return tokenizer.decode(output)

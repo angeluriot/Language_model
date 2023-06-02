@@ -1,4 +1,3 @@
-import os
 import numpy as np
 import numpy.typing as npt
 import tokenizers as tk
@@ -8,8 +7,8 @@ from tokenizers.pre_tokenizers import PreTokenizer
 from tokenizers.normalizers import BertNormalizer
 from tqdm import tqdm
 
-import sources.data.pretokenizer as my_pretokenizer
-from sources.settings import *
+import gpt.data.pretokenizer as my_pretokenizer
+from gpt.settings import *
 
 
 class Tokenizer:
@@ -20,6 +19,7 @@ class Tokenizer:
 		self.to_index: dict[str, int] = {}
 		self.to_token: dict[int, str] = {}
 		self.max_token_length: int = 0
+		self.control_tokens: dict[str, int] = {}
 
 
 	def load_from_vocab(self, vocab: list[str]) -> None:
@@ -28,12 +28,13 @@ class Tokenizer:
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
 		self.to_token = {i: v for i, v in enumerate(self.vocab)}
 		self.max_token_length = max([len(v) for v in self.vocab])
+		self.control_tokens = {c: self.to_index[c] for c in CONTROL_CHARS}
 
 
 	def create(self, data_path: str) -> None:
 
 		self._create_vocab(data_path)
-		dataset = open(data_path, 'r').read()
+		dataset = open(data_path, 'r', encoding = 'utf-8').read()
 		self._sort_vocab(dataset)
 
 
@@ -51,7 +52,7 @@ class Tokenizer:
 			special_tokens = CONTROL_CHARS
 		)
 
-		tokenizer.train([os.path.join(DATA_DIR, data_path)], trainer)
+		tokenizer.train([data_path], trainer)
 
 		self.vocab = tokenizer.get_vocab().keys()
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
@@ -97,10 +98,12 @@ class Tokenizer:
 				j += 1
 
 		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
-		self.vocab = [v[0] for v in self.vocab if v[1] > 0]
+		self.vocab = [v[0] for v in self.vocab if v[1] > 0 or v[0] in CONTROL_CHARS]
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
 		self.to_token = {i: v for i, v in enumerate(self.vocab)}
 		self.max_token_length = max([len(v) for v in self.vocab])
+		self.control_tokens = {c: self.to_index[c] for c in CONTROL_CHARS}
+
 
 
 	def encode(self, text: str, verbose: bool = False) -> npt.NDArray[np.uint16]:
@@ -138,19 +141,15 @@ class Tokenizer:
 						break
 
 				if not found:
-					output.append(self.to_index['<unk>'])
+					output.append(self.control_tokens['<unk>'])
 
 				j += 1
 
 		return np.array(output, dtype = np.uint16)
 
 
-	def decode(
-		self,
-		tokens: npt.NDArray[np.uint16] | list[np.uint16] | list[int] | np.uint16 | int,
-		keep_token_names: bool = False,
-		token_array: bool = False
-	) -> str | list[str]:
+	def decode(self, tokens: npt.NDArray[np.uint16] | list[np.uint16] | list[int] | np.uint16 | int,
+		keep_token_names: bool = False, token_array: bool = False) -> str | list[str]:
 
 		if type(tokens) == int or type(tokens) == np.uint16:
 			tokens = [tokens]
@@ -169,13 +168,13 @@ class Tokenizer:
 			for t in tokens:
 				if t < 0 or t >= len(self.vocab):
 					continue
-				if t == self.to_index['<nl>']:
+				if t == self.control_tokens['<nl>']:
 					text.append('\n')
-				elif t == self.to_index['<unk>']:
+				elif t == self.control_tokens['<unk>']:
 					text.append('�')
-				elif t == self.to_index['<eom>']:
+				elif t == self.control_tokens['<eom>']:
 					text.append('\n\n<<< END OF MESSAGE >>>\n\n')
-				elif t == self.to_index['<eot>']:
+				elif t == self.control_tokens['<eot>']:
 					text.append('\n\n<<<<<<<<<<<<<<< END OF TEXT >>>>>>>>>>>>>>>\n\n')
 				else:
 					text.append(self.to_token[t])

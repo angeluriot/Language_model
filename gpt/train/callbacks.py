@@ -2,8 +2,8 @@ import os, pickle, typing
 from keras import backend
 from keras.callbacks import Callback
 
-from utils import *
-from settings import *
+from gpt.utils import *
+from gpt.settings import *
 
 
 class LRScheduler(Callback):

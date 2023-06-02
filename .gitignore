@@ -1,6 +1,7 @@
-bacup
-venv
-output
+/bacup
+/venv
+/data
+/output
 notes.txt
 final_SPF.xml
 __pycache__

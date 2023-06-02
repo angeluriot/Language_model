@@ -1,15 +1,15 @@
-import sys, pickle
+import pickle
 import tensorflow as tf
 from keras import backend
 from keras.optimizers import Optimizer
 from gradient_accumulator import GradientAccumulateModel
 
-from settings import *
+from gpt.settings import *
 
 
-def save_text_array(array: list, path: str) -> None:
+def save_text_array(array: list[str], path: str) -> None:
 
-	with open(path, 'w') as f:
+	with open(path, 'w', encoding = 'utf-8') as f:
 
 		f.truncate(0)
 
@@ -21,9 +21,9 @@ def save_text_array(array: list, path: str) -> None:
 				f.write('\n')
 
 
-def load_text_array(path: str) -> list:
+def load_text_array(path: str) -> list[str]:
 
-	with open(path, 'r') as f:
+	with open(path, 'r', encoding = 'utf-8') as f:
 
 		return f.read().split('\n')
 

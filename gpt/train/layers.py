@@ -1,9 +1,10 @@
 import math, typing
 import tensorflow as tf
+from keras.engine.keras_tensor import KerasTensor
 from keras.layers import Layer
 from keras.initializers.initializers_v2 import RandomNormal
 
-from settings import *
+from gpt.settings import *
 
 
 class TokenEmbedding(Layer):
@@ -31,7 +32,7 @@ class TokenEmbedding(Layer):
 		return config
 
 
-	def build(self, input_shape) -> None:
+	def build(self, input_shape: tuple[int, ...]) -> None:
 
 		super().build(input_shape)
 
@@ -44,7 +45,7 @@ class TokenEmbedding(Layer):
 		)
 
 
-	def call(self, inputs, transpose: bool = False):
+	def call(self, inputs: KerasTensor, transpose: bool = False) -> KerasTensor:
 
 		if not transpose:
 
@@ -89,7 +90,7 @@ class PositionEmbedding(Layer):
 		return config
 
 
-	def build(self, input_shape) -> None:
+	def build(self, input_shape: tuple[int, ...]) -> None:
 
 		super().build(input_shape)
 
@@ -102,7 +103,7 @@ class PositionEmbedding(Layer):
 		)
 
 
-	def call(self, inputs):
+	def call(self, inputs: KerasTensor) -> KerasTensor:
 
 		if tf.shape(inputs)[1] > self.max_context:
 			inputs = inputs[:, -self.max_context:]
@@ -129,6 +130,6 @@ class GeLU(Layer):
 		super().__init__(**kwargs)
 
 
-	def call(self, inputs):
+	def call(self, inputs: KerasTensor) -> KerasTensor:
 
 		return 0.5 * inputs * (1.0 + tf.math.tanh(tf.math.sqrt(2.0 / math.pi) * (inputs + 0.044715 * tf.math.pow(inputs, 3))))
