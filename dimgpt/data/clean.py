@@ -1,5 +1,7 @@
 from unidecode import unidecode
 
+from dimgpt.settings import *
+
 
 AUTHORIZED_UNICODE = set(
 	'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' \
@@ -96,7 +98,18 @@ REPLACE_ASCII = {
 	'`': "'"
 }
 
-POSSIBLE_CHARS = AUTHORIZED_UNICODE | set(DECODE_STRING_EMOJIS.keys()) | set('↲⇥␃␄')
+STRIP_REPLACE = {
+	' ↲': '↲',
+	'⇥↲': '↲',
+	' ␃': '␃',
+	'⇥␃': '␃',
+	'↲␃': '␃',
+	' ␄': '␄',
+	'⇥␄': '␄',
+	'↲␄': '␄'
+}
+
+POSSIBLE_CHARS = AUTHORIZED_UNICODE | set(DECODE_STRING_EMOJIS.keys()) | set('↲⇥␃␄�')
 
 
 def clean_ascii(char: str) -> str:
@@ -134,7 +147,13 @@ def clean_string(text: str) -> str:
 	for key, value in ENCODE_STRING_EMOJIS.items():
 		text = text.replace(key, value)
 
-	return ''.join([clean_unicode(char) for char in text])
+	text = ''.join([clean_unicode(char) for char in text])
+
+	for key, value in STRIP_REPLACE.items():
+		while key in text:
+			text = text.replace(key, value)
+
+	return text
 
 
 def clean_document(document: str) -> str:
@@ -142,9 +161,62 @@ def clean_document(document: str) -> str:
 	return clean_string(document) + '␄'
 
 
+def clean_message(message: str) -> str:
+
+	message = clean_string(message).strip()
+
+	while True:
+
+		if message[0] == '>':
+			start = 0
+		elif message.find('↲>') != -1:
+			start = message.find('↲>') + 1
+		else:
+			start = None
+
+		if start is None:
+			break
+
+		end = message.find('↲', start + 1)
+
+		if end == -1:
+			break
+
+		message = message[:start] + message[end:]
+
+	while '↲↲↲' in message:
+		message = message.replace('↲↲↲', '↲↲')
+
+	while message.startswith('↲') or message.startswith('⇥') or message.startswith(' '):
+		message = message[1:]
+
+	while message.endswith('↲') or message.endswith('⇥') or message.endswith(' '):
+		message = message[:-1]
+
+	return message + '␃'
+
+
+def clean_chat(chat: list[str]) -> str:
+
+	for i in range(len(chat)):
+		chat[i] = clean_message(chat[i])
+
+	chat = ''.join(chat)
+
+	if len(chat) == 0:
+		return ''
+
+	return chat[:-1] + '␄'
+
+
 def decode_string(text: str) -> str:
 
 	for key, value in DECODE_STRING_EMOJIS.items():
 		text = text.replace(key, value)
+
+	text = text.replace('↲', '\n')
+	text = text.replace('⇥', '\t')
+	text = text.replace('␃', '\n\n----- END OF MESSAGE -----\n\n')
+	text = text.replace('␄', '\n\n----- END OF DOCUMENT -----\n\n')
 
 	return text

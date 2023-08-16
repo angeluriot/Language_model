@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from training.settings import *
+from dimgpt.settings import *
 
 
 # Base class for all layers

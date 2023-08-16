@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 
-from training.layers import *
-from training.settings import *
-from training import utils
+from dimgpt.training.layers import *
+from dimgpt.settings import *
+from dimgpt import utils
 
 
 # Model block

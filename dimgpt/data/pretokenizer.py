@@ -1,7 +1,40 @@
 import regex
 
 from tokenizers import *
-from gpt.settings import *
+from dimgpt.settings import *
+
+
+def split_keep(text: str, delimiter: str) -> list[str]:
+
+	words = text.split(delimiter)
+
+	if len(words) == 1:
+		return words
+
+	temp = []
+
+	for i in range(len(words) - 1):
+		temp.extend([words[i], delimiter])
+
+	temp.append(words[-1])
+
+	return temp
+
+
+def detach_control_characters(words: str) -> list[str]:
+
+	temp = []
+
+	for char in CONTROL_CHARS:
+
+		for word in words:
+			temp.extend(split_keep(word, char))
+
+		words = temp
+		words = list(filter(None, words))
+		temp = []
+
+	return words
 
 
 def split(text: str) -> list[str]:
@@ -39,6 +72,7 @@ def split(text: str) -> list[str]:
 		temp.append(words[-1])
 
 	words = temp
+	words = detach_control_characters(words)
 
 	return words
 
