@@ -42,3 +42,14 @@ class Module(nn.Module):
 			if p.grad is not None:
 				torch.nan_to_num(p.grad, nan = 0, posinf = 1e5, neginf = -1e5, out = p.grad)
 
+
+class Attention(Module):
+
+	def __init__(self):
+
+		pass
+
+
+	def forward(self, x: torch.Tensor) -> torch.Tensor:
+
+		return x
