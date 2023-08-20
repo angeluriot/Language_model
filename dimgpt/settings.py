@@ -36,7 +36,7 @@ INIT_STDDEV = 0.02
 # ============= Training ============== #
 
 BATCH_SIZE = 8
-NUM_ACCUMULATIONS = 32
+NUM_ACCUMULATIONS = 1
 
 MAX_LEARNING_RATE = 6e-4
 MIN_LEARNING_RATE = 6e-5

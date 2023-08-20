@@ -187,16 +187,13 @@ class Trainer():
 						val_loss = 0.0
 						val_accuracy = 0.0
 
-						# First load data (asyncronous)
-						x, y = val_dataset.next()
-
 						for _ in range(NUM_ACCUMULATIONS):
+
+							# Load data
+							x, y = val_dataset.next()
 
 							# Forward pass
 							prediction = self.model(x)
-
-							# Next load data (asyncronous)
-							x, y = val_dataset.next()
 
 							# Loss and accuracy
 							val_loss += nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)).item() / NUM_ACCUMULATIONS
