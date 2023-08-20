@@ -1,5 +1,7 @@
 import os, torch
 
+# ============== Dataset ============== #
+
 DATA_DIR = 'data'
 OUTPUT_DIR = 'output'
 NUM_THREADS = 16
@@ -18,6 +20,9 @@ FRENCH_REDDIT_NB_DOCUMENTS = 556_621
 FRENCH_REDDIT_NB_CHARS = 445_808_054
 
 CONTROL_CHARS = ['↲', '␃', '␄', '�']
+
+# =============== Model =============== #
+
 VOCAB_SIZE = 30_000
 MAX_CONTEXT = 256
 EMBEDDING_DIM = 768
@@ -25,22 +30,29 @@ NUM_HEADS = 12
 FFN_DIM = 4 * EMBEDDING_DIM
 NUM_BLOCKS = 12
 DROPOUT = 0.0
-USE_BIAS = True
+USE_BIAS = False
 INIT_STDDEV = 0.02
 
-STEP_PER_EPOCH = 512
-VAL_STEPS = 64
-BATCH_SIZE = 4
-NUM_ACCUMULATIONS = 64
-NUM_EPOCHS = 1_000_000
+# ============= Training ============== #
+
+BATCH_SIZE = 8
+NUM_ACCUMULATIONS = 32
+
 MAX_LEARNING_RATE = 6e-4
 MIN_LEARNING_RATE = 6e-5
-INCREASE_STEPS = 1000
-DECAY_STEPS = 100_000
+WARMUP_STEPS = 1_000
+DECAY_STEPS = 500_000
+
 WEIGHT_DECAY = 0.1
 BETA_1 = 0.9
 BETA_2 = 0.95
-CLIP_GRADIENTS = 1.0
+CLIP_GRADIENT = 1.0
+
+PRINT_MA_BETA = 0.9
+VAL_INTERVAL = 50
+SAVE_INTERVAL = 100
+
+# ===================================== #
 
 GPU_ENABLED = torch.cuda.is_available()
 DEVICE_NAME = 'cuda:0' if GPU_ENABLED else 'cpu'
