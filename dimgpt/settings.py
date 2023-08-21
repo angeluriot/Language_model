@@ -35,8 +35,8 @@ INIT_STDDEV = 0.02
 
 # ============= Training ============== #
 
-BATCH_SIZE = 8
-NUM_ACCUMULATIONS = 1
+BATCH_SIZE = 16
+NUM_ACCUMULATIONS = 16
 
 MAX_LEARNING_RATE = 6e-4
 MIN_LEARNING_RATE = 6e-5
@@ -48,9 +48,8 @@ BETA_1 = 0.9
 BETA_2 = 0.95
 CLIP_GRADIENT = 1.0
 
-PRINT_MA_BETA = 0.9
+METRICS_BETA = 0.9
 VAL_INTERVAL = 50
-SAVE_INTERVAL = 100
 
 # ===================================== #
 
