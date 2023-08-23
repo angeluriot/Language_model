@@ -7,7 +7,7 @@ from datasets.dataset_dict import DatasetDict
 import xml.etree.ElementTree as ET
 
 from dimgpt.data.clean import *
-from dimgpt.data.tokenizer import *
+from dimgpt.data.tokenizer import Tokenizer
 from dimgpt.settings import *
 
 

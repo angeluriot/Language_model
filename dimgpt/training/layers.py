@@ -42,40 +42,26 @@ class Module(nn.Module):
 			if p.grad is not None:
 				torch.nan_to_num(p.grad, nan = 0, posinf = 1e5, neginf = -1e5, out = p.grad)
 
-'''
-class CausalSelfAttention(Module):
 
-	def __init__(self):
+	# Clip the module gradients
+	def clip_gradient(self, max_norm: float) -> None:
 
-		super().__init__()
-
-		self.attention = nn.MultiheadAttention(
-			embed_dim = EMBEDDING_DIM,
-			num_heads = NUM_HEADS,
-			dropout = DROPOUT if self.training else 0.0
-		)
-
-
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-
-		mask = nn.Transformer.generate_square_subsequent_mask(x.shape[1], device = DEVICE)
-		return self.attention(x, x, x, need_weights = False, attn_mask = mask, is_causal = True)[0]
-'''
+		nn.utils.clip_grad_norm_(self.parameters(), max_norm)
 
 
 class Linear(nn.Linear):
 
-	def __init__(self, in_features: int, out_features: int, bias: bool = USE_BIAS):
+	def __init__(self, in_features: int, out_features: int, bias: bool = USE_BIAS, **kwargs):
 
-		super().__init__(in_features, out_features, bias)
+		super().__init__(in_features, out_features, bias, **kwargs)
 		nn.init.normal_(self.weight, mean = 0.0, std = INIT_STDDEV)
 
 
 class LayerNorm(Module):
 
-	def __init__(self, shape: int, bias: bool = USE_BIAS, epsilon: float = 1e-5):
+	def __init__(self, shape: int, bias: bool = USE_BIAS, epsilon: float = 1e-5, **kwargs):
 
-		super().__init__()
+		super().__init__(**kwargs)
 
 		self.shape = (shape,)
 		self.weight = nn.Parameter(torch.ones(shape))
@@ -90,17 +76,17 @@ class LayerNorm(Module):
 
 class Embedding(nn.Embedding):
 
-	def __init__(self, num_embeddings: int, embedding_dim: int):
+	def __init__(self, num_embeddings: int, embedding_dim: int, **kwargs):
 
-		super().__init__(num_embeddings, embedding_dim)
+		super().__init__(num_embeddings, embedding_dim, **kwargs)
 		nn.init.normal_(self.weight, mean = 0.0, std = INIT_STDDEV)
 
 
 class CausalSelfAttention(Module):
 
-	def __init__(self):
+	def __init__(self, **kwargs):
 
-		super().__init__()
+		super().__init__(**kwargs)
 
 		self.c_attn = Linear(EMBEDDING_DIM, 3 * EMBEDDING_DIM)
 		self.c_proj = Linear(EMBEDDING_DIM, EMBEDDING_DIM)
@@ -123,3 +109,24 @@ class CausalSelfAttention(Module):
 		y = self.resid_dropout(self.c_proj(y))
 
 		return y
+
+
+'''
+class CausalSelfAttention(Module):
+
+	def __init__(self, **kwargs):
+
+		super().__init__(**kwargs)
+
+		self.attention = nn.MultiheadAttention(
+			embed_dim = EMBEDDING_DIM,
+			num_heads = NUM_HEADS,
+			dropout = DROPOUT if self.training else 0.0
+		)
+
+
+	def forward(self, x: torch.Tensor) -> torch.Tensor:
+
+		mask = nn.Transformer.generate_square_subsequent_mask(x.shape[1], device = DEVICE)
+		return self.attention(x, x, x, need_weights = False, attn_mask = mask, is_causal = True)[0]
+'''

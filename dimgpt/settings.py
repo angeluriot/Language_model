@@ -1,4 +1,4 @@
-import os, torch
+import torch
 
 # ============== Dataset ============== #
 
@@ -35,12 +35,12 @@ INIT_STDDEV = 0.02
 
 # ============= Training ============== #
 
-BATCH_SIZE = 32
-NUM_ACCUMULATIONS = 1
+BATCH_SIZE = 64
+NUM_ACCUMULATIONS = 4
 
 MAX_LEARNING_RATE = 6e-4
 MIN_LEARNING_RATE = 6e-5
-WARMUP_STEPS = 1_000
+WARMUP_STEPS = 2_000
 DECAY_STEPS = 500_000
 
 WEIGHT_DECAY = 0.1

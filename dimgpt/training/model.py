@@ -4,6 +4,7 @@ from torch import nn
 from dimgpt.training.layers import *
 from dimgpt.settings import *
 from dimgpt import utils
+from dimgpt.sampling.sample import sample
 
 
 # Model block

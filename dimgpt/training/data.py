@@ -8,12 +8,9 @@ from dimgpt.settings import *
 # Text dataset class
 class Dataset():
 
-	def __init__(self, paths: list[str], **kwargs):
-
-		super().__init__(**kwargs)
+	def __init__(self, paths: list[str]):
 
 		self.datasets = [np.memmap(path, dtype = np.uint16, mode = 'r') for path in paths]
-
 		self.sizes = np.array([len(dataset) for dataset in self.datasets], dtype = np.float32)
 		self.sizes /= np.sum(self.sizes)
 

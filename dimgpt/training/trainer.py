@@ -3,8 +3,9 @@ import torch
 from torch import nn
 
 from dimgpt.settings import *
-from dimgpt.training.data import *
-from dimgpt.training.model import *
+from dimgpt.training.data import Dataset
+from dimgpt.training.model import Model
+from dimgpt.training.optimizer import AdamW
 
 
 class Trainer():
@@ -12,6 +13,8 @@ class Trainer():
 	def __init__(self, model: Model, train_dataset: Dataset, val_datasets: list[Dataset]):
 
 		self.model = model
+		model.train()
+
 		self.train_dataset = train_dataset
 		self.val_datasets = val_datasets
 
@@ -27,20 +30,15 @@ class Trainer():
 		self.val_accuracies = [0.0] * len(self.val_datasets)
 		self.best_val_loss = float('inf')
 
-		self.optimizer = torch.optim.Adam(
-			self.model.parameters(),
-			lr = self.learning_rate,
-			betas = (BETA_1, BETA_2),
-			weight_decay = WEIGHT_DECAY
-		)
+		self.optimizer = AdamW(self.model.parameters(), self.learning_rate)
 
 		self.metrics_history = {
 			'step': [],
 			'tokens': [],
 			'loss': [],
 			'accuracy': [],
-			'val_losses': [[]] * len(self.val_datasets),
-			'val_accuracies': [[]] * len(self.val_datasets)
+			'val_losses': [[] for _ in range(len(self.val_datasets))],
+			'val_accuracies': [[] for _ in range(len(self.val_datasets))]
 		}
 
 
@@ -179,7 +177,7 @@ class Trainer():
 
 			# Update weights
 			self.model.clean_nan()
-			torch.nn.utils.clip_grad_norm_(self.model.parameters(), CLIP_GRADIENT)
+			self.model.clip_gradient(CLIP_GRADIENT)
 			self.optimizer.step()
 			self.optimizer.zero_grad(set_to_none = True)
 
