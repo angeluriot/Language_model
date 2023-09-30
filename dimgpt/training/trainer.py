@@ -1,4 +1,4 @@
-import os, pickle, math
+import os, pickle, math, time
 import torch
 from torch import nn
 
@@ -18,6 +18,7 @@ class Trainer():
 		self.train_dataset = train_dataset
 		self.val_datasets = val_datasets
 
+		self.time = None
 		self.step = 0
 		self.tokens = 0
 		self.epochs = 0.0
@@ -33,8 +34,10 @@ class Trainer():
 		self.optimizer = AdamW(self.model.parameters(), self.learning_rate)
 
 		self.metrics_history = {
+			'time': [],
 			'step': [],
 			'tokens': [],
+			'epochs': [],
 			'loss': [],
 			'accuracy': [],
 			'val_losses': [[] for _ in range(len(self.val_datasets))],
@@ -65,8 +68,8 @@ class Trainer():
 	# Find previous session
 	def find_previous_session(self) -> None:
 
-		if os.path.exists(os.path.join(OUTPUT_DIR, 'model')):
-			self.load_model(os.path.join(OUTPUT_DIR, 'model'))
+		if os.path.exists(os.path.join(OUTPUT_DIR, 'last')):
+			self.load_model(os.path.join(OUTPUT_DIR, 'last'))
 
 		if os.path.exists(os.path.join(OUTPUT_DIR, 'metrics.pkl')):
 			self.load_metrics()
@@ -83,8 +86,16 @@ class Trainer():
 	# Save metrics
 	def save_metrics(self) -> None:
 
+		if self.time is None:
+			self.metrics_history["time"].append(0.0)
+		else:
+			self.metrics_history["time"].append(self.metrics_history["time"][-1] + (time.time() - self.time))
+
+		self.time = time.time()
+
 		self.metrics_history["step"].append(self.step)
 		self.metrics_history["tokens"].append(self.tokens)
+		self.metrics_history["epochs"].append(self.epochs)
 		self.metrics_history["loss"].append(self.loss_ema)
 		self.metrics_history["accuracy"].append(self.accuracy_ema)
 
@@ -105,7 +116,7 @@ class Trainer():
 
 		self.step = self.metrics_history["step"][-1]
 		self.tokens = self.metrics_history["tokens"][-1]
-		self.epochs = self.tokens / self.train_dataset.size()
+		self.epochs = self.metrics_history["epochs"][-1]
 		self.loss_ema = self.metrics_history["loss"][-1]
 		self.accuracy_ema = self.metrics_history["accuracy"][-1]
 
@@ -114,7 +125,7 @@ class Trainer():
 			self.val_accuracies[i] = self.metrics_history["val_accuracies"][i][-1]
 
 		self.best_val_loss = min(self.metrics_history["val_losses"][0])
-		self.update_learning_rate()
+		self.time = time.time()
 
 
 	# Update learning rate
@@ -148,6 +159,14 @@ class Trainer():
 		# Training loop
 		while True:
 
+			# Update step
+			self.step += 1
+			self.tokens += (MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS
+			self.epochs += ((MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS) / self.train_dataset.size()
+
+			# Update learning rate
+			self.update_learning_rate()
+
 			# ----- Training ----- #
 
 			self.model.train()
@@ -157,7 +176,7 @@ class Trainer():
 			# First load data (asyncronous)
 			x, y = self.train_dataset.next()
 
-			for _ in range(NUM_ACCUMULATIONS):
+			for i in range(NUM_ACCUMULATIONS):
 
 				# Forward pass
 				prediction = self.model(x)
@@ -170,7 +189,8 @@ class Trainer():
 				self.accuracy += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
 
 				# Next load data (asyncronous)
-				x, y = self.train_dataset.next()
+				if i < NUM_ACCUMULATIONS - 1:
+					x, y = self.train_dataset.next()
 
 				# Backward pass
 				loss.backward()
@@ -223,11 +243,3 @@ class Trainer():
 
 			# Print
 			self.print()
-
-			# Update step
-			self.step += 1
-			self.tokens = self.step * (MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS
-			self.epochs = self.tokens / self.train_dataset.size()
-
-			# Update learning rate
-			self.update_learning_rate()

@@ -83,7 +83,7 @@ def import_xml_dataset(path: str) -> list[list[str]]:
 	return dataset
 
 
-def prepare_hf_dataset(tokenizer: Tokenizer, dataset: DatasetDict, name: str) -> None:
+def prepare_hf_text_dataset(tokenizer: Tokenizer, dataset: DatasetDict, name: str) -> None:
 
 	def process(document: dict, tokenizer: Tokenizer):
 
