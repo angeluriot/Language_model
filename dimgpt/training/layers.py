@@ -88,45 +88,24 @@ class CausalSelfAttention(Module):
 
 		super().__init__(**kwargs)
 
-		self.c_attn = Linear(EMBEDDING_DIM, 3 * EMBEDDING_DIM)
-		self.c_proj = Linear(EMBEDDING_DIM, EMBEDDING_DIM)
-		nn.init.normal_(self.c_proj.weight, mean = 0.0, std = INIT_STDDEV / math.sqrt(2 * NUM_BLOCKS))
-		self.resid_dropout = nn.Dropout(DROPOUT)
+		self.causal_attention = Linear(EMBEDDING_DIM, 3 * EMBEDDING_DIM)
+		self.causal_projection = Linear(EMBEDDING_DIM, EMBEDDING_DIM)
+		nn.init.normal_(self.causal_projection.weight, mean = 0.0, std = INIT_STDDEV / math.sqrt(2 * NUM_BLOCKS))
+		self.residual_dropout = nn.Dropout(DROPOUT)
 
 
 	def forward(self, x):
 
-		B, T, C = x.shape
+		batch_size, context_size, _ = x.shape
 
-		q, k, v  = self.c_attn(x).split(EMBEDDING_DIM, dim = 2)
+		q, k, v  = self.causal_attention(x).split(EMBEDDING_DIM, dim = 2)
 
-		k = k.reshape(B, T, NUM_HEADS, C // NUM_HEADS).transpose(1, 2)
-		q = q.reshape(B, T, NUM_HEADS, C // NUM_HEADS).transpose(1, 2)
-		v = v.reshape(B, T, NUM_HEADS, C // NUM_HEADS).transpose(1, 2)
+		k = k.reshape(batch_size, context_size, NUM_HEADS, EMBEDDING_DIM // NUM_HEADS).transpose(1, 2)
+		q = q.reshape(batch_size, context_size, NUM_HEADS, EMBEDDING_DIM // NUM_HEADS).transpose(1, 2)
+		v = v.reshape(batch_size, context_size, NUM_HEADS, EMBEDDING_DIM // NUM_HEADS).transpose(1, 2)
 
-		y = nn.functional.scaled_dot_product_attention(q, k, v, attn_mask = None, dropout_p = DROPOUT if self.training else 0, is_causal = True)
-		y = y.transpose(1, 2).contiguous().reshape(B, T, C)
-		y = self.resid_dropout(self.c_proj(y))
+		x = nn.functional.scaled_dot_product_attention(q, k, v, attn_mask = None, dropout_p = DROPOUT if self.training else 0, is_causal = True)
+		x = x.transpose(1, 2).contiguous().reshape(batch_size, context_size, EMBEDDING_DIM)
+		x = self.residual_dropout(self.causal_projection(x))
 
-		return y
-
-
-'''
-class CausalSelfAttention(Module):
-
-	def __init__(self, **kwargs):
-
-		super().__init__(**kwargs)
-
-		self.attention = nn.MultiheadAttention(
-			embed_dim = EMBEDDING_DIM,
-			num_heads = NUM_HEADS,
-			dropout = DROPOUT if self.training else 0.0
-		)
-
-
-	def forward(self, x: torch.Tensor) -> torch.Tensor:
-
-		mask = nn.Transformer.generate_square_subsequent_mask(x.shape[1], device = DEVICE)
-		return self.attention(x, x, x, need_weights = False, attn_mask = mask, is_causal = True)[0]
-'''
+		return x
