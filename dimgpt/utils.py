@@ -49,3 +49,26 @@ def load_text_array(path: str) -> list[str]:
 	with open(path, 'r', encoding = 'utf-8') as f:
 
 		return f.read().split('\n')
+
+
+def split_keep(text: str, delimiter: str) -> list[str]:
+
+	words = text.split(delimiter)
+
+	temp = []
+
+	for i in range(len(words) - 1):
+		temp.extend([words[i], delimiter])
+
+	temp.append(words[-1])
+
+	return temp
+
+
+def is_full_of(text: str, char: str) -> bool:
+
+	for c in text:
+		if c != char:
+			return False
+
+	return True

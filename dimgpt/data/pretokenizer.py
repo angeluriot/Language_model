@@ -2,23 +2,7 @@ import regex
 
 from tokenizers import *
 from dimgpt.settings import *
-
-
-def split_keep(text: str, delimiter: str) -> list[str]:
-
-	words = text.split(delimiter)
-
-	if len(words) == 1:
-		return words
-
-	temp = []
-
-	for i in range(len(words) - 1):
-		temp.extend([words[i], delimiter])
-
-	temp.append(words[-1])
-
-	return temp
+from dimgpt.utils import *
 
 
 def detach_control_characters(words: str) -> list[str]:
@@ -28,11 +12,27 @@ def detach_control_characters(words: str) -> list[str]:
 	for char in CONTROL_CHARS:
 
 		for word in words:
-			temp.extend(split_keep(word, char))
+			temp.extend(list(filter(None, split_keep(word, char))))
 
 		words = temp
 		words = list(filter(None, words))
 		temp = []
+
+	return words
+
+
+def limit_multiple_spaces(words: list[str], nb_max: int = 4) -> list[str]:
+
+	temp = []
+
+	for word in words:
+		if is_full_of(word, ' ') and len(word) > nb_max:
+			temp.append(list(filter(None, split_keep(word, ' ' * nb_max))))
+		else:
+			temp.append(word)
+
+	words = temp
+	words = list(filter(None, words))
 
 	return words
 
@@ -44,7 +44,7 @@ def split(text: str) -> list[str]:
 
 	# Split in words
 
-	reg = r'(|\d+|\s+|\p{L}+|[^\d\p{L}\s]+)'
+	reg = r'(|\d|\s+|\p{L}+|[^\d\p{L}\s]+)'
 	words = regex.split(reg, text, flags = regex.UNICODE, concurrent = False)
 	words = list(filter(None, words))
 
@@ -72,7 +72,10 @@ def split(text: str) -> list[str]:
 		temp.append(words[-1])
 
 	words = temp
+	words = list(filter(None, words))
+
 	words = detach_control_characters(words)
+	words = limit_multiple_spaces(words)
 
 	return words
 

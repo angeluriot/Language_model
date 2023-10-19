@@ -35,16 +35,16 @@ class Block(Module):
 # Model
 class Model(Module):
 
-	def __init__(self, vocab_size: int, **kwargs):
+	def __init__(self, **kwargs):
 
 		super().__init__(**kwargs)
 
-		self.token_embedding = Embedding(vocab_size, EMBEDDING_DIM)
+		self.token_embedding = Embedding(VOCAB_SIZE, EMBEDDING_DIM)
 		self.position_embedding = Embedding(MAX_CONTEXT, EMBEDDING_DIM)
 		self.init_dropout = nn.Dropout(DROPOUT)
 		self.blocks = nn.Sequential(*[Block() for _ in range(NUM_BLOCKS)])
 		self.final_norm = LayerNorm(EMBEDDING_DIM)
-		self.final_linear = Linear(EMBEDDING_DIM, vocab_size, bias = False)
+		self.final_linear = Linear(EMBEDDING_DIM, VOCAB_SIZE, bias = False)
 		self.token_embedding.weight = self.final_linear.weight
 
 

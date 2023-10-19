@@ -95,7 +95,7 @@ class Tokenizer:
 				j += 1
 
 		self.vocab = sorted(vocab.items(), key = lambda x: x[1], reverse = True)
-		self.vocab = [v[0] for v in self.vocab if v[1] > 0 or len(v[0]) == 1]
+		self.vocab = [v[0] for v in self.vocab]
 		self.to_index = {v: i for i, v in enumerate(self.vocab)}
 		self.to_token = {i: v for i, v in enumerate(self.vocab)}
 		self.max_token_length = max([len(v) for v in self.vocab])

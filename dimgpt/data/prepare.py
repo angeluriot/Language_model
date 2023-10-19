@@ -14,6 +14,9 @@ from dimgpt.settings import *
 
 def create_tokenizer_data(cc100: DatasetDict, wikipedia: DatasetDict) -> tuple[int]:
 
+	if not os.path.exists(DATA_DIR):
+		os.makedirs(DATA_DIR)
+
 	with open(os.path.join(DATA_DIR, 'tokenizer_data.txt'), 'w', encoding = 'utf-8') as file:
 
 		file.truncate(0)
