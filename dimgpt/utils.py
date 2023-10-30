@@ -63,12 +63,3 @@ def split_keep(text: str, delimiter: str) -> list[str]:
 	temp.append(words[-1])
 
 	return temp
-
-
-def is_full_of(text: str, char: str) -> bool:
-
-	for c in text:
-		if c != char:
-			return False
-
-	return True

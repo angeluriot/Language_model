@@ -57,7 +57,7 @@ class Sampler():
 		with torch.no_grad():
 
 			input = self.tokenizer.encode(input).tolist()
-			eot = self.tokenizer.encode('␄')[0]
+			eot = self.tokenizer.encode('<eot>')[0]
 			output = []
 			to_print = []
 			last_line_length = 0

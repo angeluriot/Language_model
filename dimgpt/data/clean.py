@@ -63,7 +63,6 @@ ENCODE_STRING_EMOJIS = {
 	'☣️': '☣',
 	'⚠️': '⚠',
 	'♻️': '♻',
-	'🏳️': '🏳',
 	'🏳️‍🌈': '①',
 	'🏳️‍⚧️': '②',
 	'🏴‍☠️': '③',
@@ -81,10 +80,11 @@ ENCODE_STRING_EMOJIS = {
 	'🇰🇷': '⑮',
 	'🇦🇺': '⑯',
 	'🇲🇽': '⑰',
-	'🇪🇸': '⑱'
+	'🇪🇸': '⑱',
+	'🏳️': '🏳'
 }
 
-DECODE_STRING_EMOJIS = {value: key for key, value in ENCODE_STRING_EMOJIS.items()}
+DECODE_STRING_EMOJIS = {value: key for key, value in reversed(ENCODE_STRING_EMOJIS.items())}
 
 ENCODE_CHARS = list('①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱')
 
@@ -93,23 +93,25 @@ REPLACE_ASCII_STRING = {
 }
 
 REPLACE_ASCII = {
-	'\n': '↲',
-	'\t': '⇥',
 	'`': "'"
 }
 
 STRIP_REPLACE = {
-	' ↲': '↲',
-	'⇥↲': '↲',
-	' ␃': '␃',
-	'⇥␃': '␃',
-	'↲␃': '␃',
-	' ␄': '␄',
-	'⇥␄': '␄',
-	'↲␄': '␄'
+	' \n': '\n',
+	'\t\n': '\n',
+	'\n\n\n': '\n\n'
 }
 
-POSSIBLE_CHARS = AUTHORIZED_UNICODE | set(DECODE_STRING_EMOJIS.keys()) | set('↲⇥␃␄�')
+STRIP_CONTROLS = ['<sot>', '<som>', '<user>', '<bot>', '<eom>', '<eot>']
+
+STRIP_SPACES = [' ', '\t', '\n']
+
+CONTROL_REPLACE = {
+	'\t': '<tab>',
+	'\n': '<nl>'
+}
+
+POSSIBLE_CHARS = AUTHORIZED_UNICODE | set(DECODE_STRING_EMOJIS.keys())
 
 
 def clean_ascii(char: str) -> str:
@@ -117,7 +119,7 @@ def clean_ascii(char: str) -> str:
 	if char in REPLACE_ASCII:
 		return REPLACE_ASCII[char]
 
-	if char in AUTHORIZED_ASCII:
+	if char in AUTHORIZED_ASCII or char in CONTROL_REPLACE.keys():
 		return char
 
 	return ''
@@ -125,7 +127,7 @@ def clean_ascii(char: str) -> str:
 
 def clean_unicode(char: str) -> str:
 
-	if char in AUTHORIZED_UNICODE or char in DECODE_STRING_EMOJIS:
+	if char in AUTHORIZED_UNICODE or char in DECODE_STRING_EMOJIS or char in CONTROL_REPLACE.keys():
 		return char
 
 	text = unidecode(char)
@@ -153,70 +155,37 @@ def clean_string(text: str) -> str:
 		while key in text:
 			text = text.replace(key, value)
 
+	for control in STRIP_CONTROLS:
+		for space in STRIP_SPACES:
+			while space + control in text:
+				text = text.replace(space + control, control)
+			while control + space in text:
+				text = text.replace(control + space, control)
+
+	text = text.strip()
+
+	for key, value in CONTROL_REPLACE.items():
+		text = text.replace(key, value)
+
 	return text
 
 
-def clean_document(document: str) -> str:
-
-	return clean_string(document) + '␄'
-
-
-def clean_message(message: str) -> str:
-
-	message = clean_string(message).strip()
-
-	while True:
-
-		if message[0] == '>':
-			start = 0
-		elif message.find('↲>') != -1:
-			start = message.find('↲>') + 1
-		else:
-			start = None
-
-		if start is None:
-			break
-
-		end = message.find('↲', start + 1)
-
-		if end == -1:
-			break
-
-		message = message[:start] + message[end:]
-
-	while '↲↲↲' in message:
-		message = message.replace('↲↲↲', '↲↲')
-
-	while message.startswith('↲') or message.startswith('⇥') or message.startswith(' '):
-		message = message[1:]
-
-	while message.endswith('↲') or message.endswith('⇥') or message.endswith(' '):
-		message = message[:-1]
-
-	return message + '␃'
-
-
-def clean_chat(chat: list[str]) -> str:
-
-	for i in range(len(chat)):
-		chat[i] = clean_message(chat[i])
-
-	chat = ''.join(chat)
-
-	if len(chat) == 0:
-		return ''
-
-	return chat[:-1] + '␄'
-
-
-def decode_string(text: str) -> str:
+def decode_string(text: str, keep_control: bool = False) -> str:
 
 	for key, value in DECODE_STRING_EMOJIS.items():
 		text = text.replace(key, value)
 
-	text = text.replace('↲', '\n')
-	text = text.replace('⇥', '\t')
-	text = text.replace('␃', '\n\n----- END OF MESSAGE -----\n\n')
-	text = text.replace('␄', '\n\n----- END OF DOCUMENT -----\n\n')
+	if keep_control:
+		return text
+
+	text = text.replace('<tab>', '\t')
+	text = text.replace('<nl>', '\n')
+	text = text.replace('<sot>', '\n\n---------- START OF DOCUMENT ----------\n\n')
+	text = text.replace('<som>', '\n\n--- Start of message ---\n\n')
+	text = text.replace('<user>', '\n\n--- User ---\n\n')
+	text = text.replace('<bot>', '\n\n--- Bot ---\n\n')
+	text = text.replace('<eom>', '\n\n--- End of message ---\n\n')
+	text = text.replace('<eot>', '\n\n---------- END OF DOCUMENT ----------\n\n')
+	text = text.replace('<unk>', '�')
 
 	return text

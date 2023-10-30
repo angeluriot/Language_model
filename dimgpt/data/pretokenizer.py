@@ -5,38 +5,6 @@ from dimgpt.settings import *
 from dimgpt.utils import *
 
 
-def detach_control_characters(words: str) -> list[str]:
-
-	temp = []
-
-	for char in CONTROL_CHARS:
-
-		for word in words:
-			temp.extend(list(filter(None, split_keep(word, char))))
-
-		words = temp
-		words = list(filter(None, words))
-		temp = []
-
-	return words
-
-
-def limit_multiple_spaces(words: list[str], nb_max: int = 4) -> list[str]:
-
-	temp = []
-
-	for word in words:
-		if is_full_of(word, ' ') and len(word) > nb_max:
-			temp.append(list(filter(None, split_keep(word, ' ' * nb_max))))
-		else:
-			temp.append(word)
-
-	words = temp
-	words = list(filter(None, words))
-
-	return words
-
-
 def split(text: str) -> list[str]:
 
 	if text == '':
@@ -44,7 +12,7 @@ def split(text: str) -> list[str]:
 
 	# Split in words
 
-	reg = r'(|\d|\s+|\p{L}+|[^\d\p{L}\s]+)'
+	reg = r'(' + r'|'.join(CONTROL_CHARS) + r'|\d+|\s+|\p{L}+|[^\d\p{L}\s' + r''.join([f'[{i}]' for i in CONTROL_CHARS]) + r']+)'
 	words = regex.split(reg, text, flags = regex.UNICODE, concurrent = False)
 	words = list(filter(None, words))
 
@@ -61,21 +29,20 @@ def split(text: str) -> list[str]:
 			continue
 
 		if words[i].endswith(' '):
-			temp.extend([words[i][:-1], ' ' + words[i + 1]])
+			spaces = list(filter(None, split_keep(words[i][:-1], '    ')))
+			temp.extend(spaces + [' ' + words[i + 1]])
 			i += 2
 			continue
 
 		temp.append(words[i])
 		i += 1
 
-	if i == len(words) - 1:
-		temp.append(words[-1])
+	if i == len(words) - 1 and words[i].endswith(' '):
+		spaces = list(filter(None, split_keep(words, '    ')))
+		temp.extend(spaces)
 
 	words = temp
 	words = list(filter(None, words))
-
-	words = detach_control_characters(words)
-	words = limit_multiple_spaces(words)
 
 	return words
 
