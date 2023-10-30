@@ -8,7 +8,7 @@ NUM_THREADS = 16
 VAL_RATIO = 0.001
 TOKENIZER_DATA_SIZE = 300_000_000
 SAVING_BATCHS = 1024
-CONTROL_CHARS = ['<tab>', '<nl>', '<sot>', '<som>', '<user>', '<bot>', '<eom>', '<eot>', '<unk>']
+CONTROL_CHARS = ['<tab>', '<nl>', '<sot>', '<som>', '<user>', '<bot>', '<eom>', '<eot>', '<unk>', '<pad>']
 MAX_TOKEN_LENGTH = 16
 AVERAGE_TOKEN_LENGTH = 4.25
 

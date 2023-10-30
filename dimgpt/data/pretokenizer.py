@@ -29,17 +29,15 @@ def split(text: str) -> list[str]:
 			continue
 
 		if words[i].endswith(' '):
-			spaces = list(filter(None, split_keep(words[i][:-1], '    ')))
-			temp.extend(spaces + [' ' + words[i + 1]])
+			temp.extend([words[i][:-1], ' ' + words[i + 1]])
 			i += 2
 			continue
 
 		temp.append(words[i])
 		i += 1
 
-	if i == len(words) - 1 and words[i].endswith(' '):
-		spaces = list(filter(None, split_keep(words, '    ')))
-		temp.extend(spaces)
+	if i == len(words) - 1:
+		temp.append(words[-1])
 
 	words = temp
 	words = list(filter(None, words))

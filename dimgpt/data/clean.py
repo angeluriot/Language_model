@@ -187,5 +187,6 @@ def decode_string(text: str, keep_control: bool = False) -> str:
 	text = text.replace('<eom>', '\n\n--- End of message ---\n\n')
 	text = text.replace('<eot>', '\n\n---------- END OF DOCUMENT ----------\n\n')
 	text = text.replace('<unk>', '�')
+	text = text.replace('<pad>', '')
 
 	return text

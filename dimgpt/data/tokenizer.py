@@ -57,6 +57,9 @@ class Tokenizer:
 			if len(word) > MAX_TOKEN_LENGTH:
 				return False
 
+			if word.endswith(' ') and len(word) > 4:
+				return False
+
 			nb_digits = 0
 
 			for char in word:
