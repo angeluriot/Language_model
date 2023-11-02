@@ -49,6 +49,7 @@ class Wikipedia(Dataset):
 
 	def save(self, tokenizer: Tokenizer) -> None:
 
+		batch_size = 256
 		split_dataset = self.dataset['train'].train_test_split(test_size = VAL_RATIO, shuffle = True)
 		split_dataset['val'] = split_dataset.pop('test')
 
@@ -70,11 +71,13 @@ class Wikipedia(Dataset):
 			file = np.memmap(path, dtype = np.uint16, mode = 'w+', shape = (size,))
 			i = 0
 
-			for batch_i in tqdm(range(SAVING_BATCHS // 8), desc = f'Saving {self.name} {split}'):
+			for batch_i in tqdm(range(batch_size), desc = f'Saving {self.name} {split}'):
 
-				batch = documents.shard(num_shards = SAVING_BATCHS // 8, index = batch_i, contiguous = True).with_format('numpy')
+				batch = documents.shard(num_shards = batch_size, index = batch_i, contiguous = True).with_format('numpy')
 				file_batch = np.concatenate(batch['tokens'])
 				file[i:i + len(file_batch)] = file_batch
 				i += len(file_batch)
 
 			file.flush()
+
+		self.save_ids()

@@ -31,10 +31,9 @@ class Dataset():
 
 		for _ in range(BATCH_SIZE):
 
-			old_dataset_i = dataset_i
-			dataset_i = np.random.choice(range(len(self.datasets)), p = self.ratios)
-			start_i = random.randint(0, len(self.datasets[dataset_i]) - 2 - MAX_CONTEXT)
-			xy = self.datasets[dataset_i][start_i:start_i + MAX_CONTEXT + 1].tolist()
+			old_dataset_i = np.random.choice(range(len(self.datasets)), p = self.ratios)
+			start_i = random.randint(0, len(self.datasets[old_dataset_i]) - 2 - MAX_CONTEXT)
+			xy = self.datasets[old_dataset_i][start_i:start_i + MAX_CONTEXT + 1].tolist()
 			i = 0
 
 			while i < MAX_CONTEXT:

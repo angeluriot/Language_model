@@ -1,5 +1,6 @@
-import random
+import os, random
 from abc import ABC, abstractmethod
+import numpy as np
 
 from dimgpt.data.clean import *
 from dimgpt.data.tokenizer import Tokenizer
@@ -54,3 +55,19 @@ class Dataset(ABC):
 	@abstractmethod
 	def save(self, tokenizer: Tokenizer) -> None:
 		pass
+
+
+	def save_ids(self) -> None:
+
+		folder = os.path.join(DATA_DIR, self.name)
+
+		for split in ['train', 'val']:
+
+			data = np.memmap(os.path.join(folder, f'{split}.bin'), dtype = np.uint16, mode = 'r')
+			ids = np.where(data == EOT_INDEX)[0] + 1
+
+			file = np.memmap(os.path.join(folder, f'{split}_ids.bin'), dtype = np.uint64, mode = 'w+', shape = ids.shape)
+			file[0] = 0
+			file[1:len(ids)] = ids.astype(np.uint64)[:len(ids) - 1]
+
+			file.flush()

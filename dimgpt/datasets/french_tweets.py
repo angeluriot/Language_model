@@ -64,3 +64,5 @@ class FrenchTweets(Dataset):
 				i += len(tokens)
 
 			file.flush()
+
+		self.save_ids()
