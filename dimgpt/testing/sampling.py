@@ -57,15 +57,14 @@ class Sampler():
 		with torch.no_grad():
 
 			input = self.tokenizer.encode(input).tolist()
-			eot = self.tokenizer.encode('<eot>')[0]
 			output = []
 			to_print = []
 			last_line_length = 0
 
 			if len(input) == 0:
-				input = [eot]
-			elif input[0] != eot:
-				input = [eot] + input
+				input = [EOT_INDEX]
+			elif input[0] != EOT_INDEX:
+				input = [EOT_INDEX] + input
 
 			if keep_input:
 				output = input[1:].copy()

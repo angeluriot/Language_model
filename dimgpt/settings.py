@@ -10,7 +10,7 @@ TOKENIZER_DATA_SIZE = 300_000_000
 SAVING_BATCHS = 1024
 CONTROL_CHARS = ['<tab>', '<nl>', '<sot>', '<som>', '<user>', '<bot>', '<eom>', '<eot>', '<unk>', '<pad>']
 MAX_TOKEN_LENGTH = 16
-AVERAGE_TOKEN_LENGTH = 4.25
+AVERAGE_TOKEN_LENGTH = 4.3
 
 # =============== Model =============== #
 
@@ -47,6 +47,7 @@ VAL_INTERVAL = 50
 GPU_ENABLED = torch.cuda.is_available()
 DEVICE_NAME = 'cuda:0' if GPU_ENABLED else 'cpu'
 DEVICE = torch.device(DEVICE_NAME)
+EOT_INDEX = VOCAB_SIZE - (len(CONTROL_CHARS) - CONTROL_CHARS.index('<eot>'))
 
 # ===================================== #
 
