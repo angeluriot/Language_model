@@ -15,7 +15,7 @@ class FrInstructs(Dataset):
 
 	def __init__(self):
 
-		super().__init__('fr_instrcuts')
+		super().__init__('fr_instructs')
 
 
 	def import_dataset(self) -> None:

@@ -12,7 +12,7 @@ class Dataset():
 
 		paths, doc_sizes, self.ratios = zip(*paths)
 
-		self.ratios = [self.ratios[i] / doc_sizes[i] for i in range(self.ratios)]
+		self.ratios = [self.ratios[i] / doc_sizes[i] for i in range(len(self.ratios))]
 		total_sum = sum(self.ratios)
 		self.ratios = [ratio / total_sum for ratio in self.ratios]
 
@@ -66,34 +66,34 @@ class Dataset():
 # Import datasets
 def import_datasets() -> tuple[Dataset, Dataset, list[Dataset]]:
 
-	cc100 = lambda split: (os.path.join(DATA_DIR, 'cc100', f'{split}.bin'), 7000)
-	wikipedia = lambda split: (os.path.join(DATA_DIR, 'wikipedia', f'{split}.bin'), 7000)
-	fr_instructs = lambda split: (os.path.join(DATA_DIR, 'fr_instructs', f'{split}.bin'), 1000)
-	french_reddit = lambda split: (os.path.join(DATA_DIR, 'french_reddit', f'{split}.bin'), 1000)
-	french_tweets = lambda split: (os.path.join(DATA_DIR, 'french_tweets', f'{split}.bin'), 100)
+	cc100 =			lambda split: (os.path.join(DATA_DIR, 'cc100', f'{split}.bin'),			7000,	1000)
+	wikipedia =		lambda split: (os.path.join(DATA_DIR, 'wikipedia', f'{split}.bin'),		7000,	100)
+	fr_instructs =	lambda split: (os.path.join(DATA_DIR, 'fr_instructs', f'{split}.bin'),	1000,	100)
+	french_reddit =	lambda split: (os.path.join(DATA_DIR, 'french_reddit', f'{split}.bin'),	1000,	10)
+	french_tweets =	lambda split: (os.path.join(DATA_DIR, 'french_tweets', f'{split}.bin'),	100,	1)
 
-	train_dataset = Dataset(
-		(*cc100('train'), 1000),
-		(*wikipedia('train'), 100),
-		(*fr_instructs('train'), 100),
-		(*french_reddit('train'), 10),
-		(*french_tweets('train'), 1)
-	)
+	train_dataset = Dataset([
+		cc100('train'),
+		wikipedia('train'),
+		fr_instructs('train'),
+		french_reddit('train'),
+		french_tweets('train')
+	])
 
-	val_dataset = Dataset(
-		(*cc100('val'), 1000),
-		(*wikipedia('val'), 100),
-		(*fr_instructs('val'), 100),
-		(*french_reddit('val'), 10),
-		(*french_tweets('val'), 1)
-	)
+	val_dataset = Dataset([
+		cc100('val'),
+		wikipedia('val'),
+		fr_instructs('val'),
+		french_reddit('val'),
+		french_tweets('val')
+	])
 
 	val_datasets = [
-		Dataset([(cc100('val'), 1)]),
-		Dataset([(wikipedia('val'), 1)]),
-		Dataset([(fr_instructs('val'), 1)]),
-		Dataset([(french_reddit('val'), 1)]),
-		Dataset([(french_tweets('val'), 1)]),
+		Dataset([cc100('val')]),
+		Dataset([wikipedia('val')]),
+		Dataset([fr_instructs('val')]),
+		Dataset([french_reddit('val')]),
+		Dataset([french_tweets('val')]),
 	]
 
 	return train_dataset, val_dataset, val_datasets
