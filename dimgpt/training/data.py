@@ -10,13 +10,11 @@ class Dataset():
 
 	def __init__(self, paths: list[tuple[str, float, float]]):
 
-		paths, doc_sizes, self.ratios = zip(*paths)
+		paths, splits, self.ratios = zip(*paths)
 
-		self.ratios = [self.ratios[i] / doc_sizes[i] for i in range(len(self.ratios))]
-		total_sum = sum(self.ratios)
-		self.ratios = [ratio / total_sum for ratio in self.ratios]
-
-		self.datasets = [np.memmap(path, dtype = np.uint16, mode = 'r') for path in paths]
+		self.datasets = [np.memmap(os.path.join(DATA_DIR, paths[i], splits[i] + '.bin'), dtype = np.uint16, mode = 'r') for i in range(len(paths))]
+		self.ids = [np.memmap(os.path.join(DATA_DIR, paths[i], splits[i] + '_ids.bin'), dtype = np.uint64, mode = 'r') for i in range(len(paths))]
+		self.ratios = (np.array(self.ratios) / np.sum(self.ratios)).tolist()
 
 
 	def size(self) -> int:
@@ -24,16 +22,17 @@ class Dataset():
 		return sum([len(data) for data in self.datasets])
 
 
-	def next(self) -> torch.Tensor:
+	def next(self) -> tuple[torch.Tensor, torch.Tensor]:
 
 		x = []
 		y = []
 
 		for _ in range(BATCH_SIZE):
 
-			old_dataset_i = np.random.choice(range(len(self.datasets)), p = self.ratios)
-			start_i = random.randint(0, len(self.datasets[old_dataset_i]) - 2 - MAX_CONTEXT)
-			xy = self.datasets[old_dataset_i][start_i:start_i + MAX_CONTEXT + 1].tolist()
+			dataset_i = np.random.choice(range(len(self.datasets)), p = self.ratios)
+			start_i = random.randint(0, len(self.datasets[dataset_i]) - 2 - MAX_CONTEXT)
+			xy = self.datasets[dataset_i][start_i:start_i + MAX_CONTEXT + 1].tolist()
+			old_dataset_i = dataset_i
 			i = 0
 
 			while i < MAX_CONTEXT:
@@ -47,7 +46,11 @@ class Dataset():
 						continue
 
 					old_dataset_i = dataset_i
-					start_i = random.randint(0, len(self.datasets[dataset_i]) - 2 - MAX_CONTEXT)
+					start_i = int(self.ids[dataset_i][random.randint(0, len(self.ids[dataset_i]) - 1)])
+
+					while start_i > len(self.datasets[dataset_i]) - 2 - MAX_CONTEXT + i:
+						start_i = int(self.ids[dataset_i][random.randint(0, len(self.ids[dataset_i]) - 1)])
+
 					xy = xy[0: i + 1]
 					xy.extend(self.datasets[dataset_i][start_i:start_i + MAX_CONTEXT - i].tolist())
 
@@ -65,34 +68,28 @@ class Dataset():
 # Import datasets
 def import_datasets() -> tuple[Dataset, Dataset, list[Dataset]]:
 
-	cc100 =			lambda split: (os.path.join(DATA_DIR, 'cc100', f'{split}.bin'),			7000,	1000)
-	wikipedia =		lambda split: (os.path.join(DATA_DIR, 'wikipedia', f'{split}.bin'),		7000,	100)
-	fr_instructs =	lambda split: (os.path.join(DATA_DIR, 'fr_instructs', f'{split}.bin'),	1000,	100)
-	french_reddit =	lambda split: (os.path.join(DATA_DIR, 'french_reddit', f'{split}.bin'),	1000,	10)
-	french_tweets =	lambda split: (os.path.join(DATA_DIR, 'french_tweets', f'{split}.bin'),	100,	1)
-
 	train_dataset = Dataset([
-		cc100('train'),
-		wikipedia('train'),
-		fr_instructs('train'),
-		french_reddit('train'),
-		french_tweets('train')
+		('cc100', 'train',			1000	/ 183),
+		('wikipedia', 'train',		100		/ 184),
+		('fr_instructs', 'train',	100		/ 44),
+		('french_reddit', 'train',	10		/ 79),
+		('french_tweets', 'train',	1		/ 11)
 	])
 
 	val_dataset = Dataset([
-		cc100('val'),
-		wikipedia('val'),
-		fr_instructs('val'),
-		french_reddit('val'),
-		french_tweets('val')
+		('cc100', 'val',			1000	/ 183),
+		('wikipedia', 'val',		100		/ 184),
+		('fr_instructs', 'val',		100		/ 44),
+		('french_reddit', 'val',	10		/ 79),
+		('french_tweets', 'val',	1		/ 11)
 	])
 
 	val_datasets = [
-		Dataset([cc100('val')]),
-		Dataset([wikipedia('val')]),
-		Dataset([fr_instructs('val')]),
-		Dataset([french_reddit('val')]),
-		Dataset([french_tweets('val')]),
+		Dataset([('cc100', 'val', 1)]),
+		Dataset([('wikipedia', 'val', 1)]),
+		Dataset([('fr_instructs', 'val', 1)]),
+		Dataset([('french_reddit', 'val', 1)]),
+		Dataset([('french_tweets', 'val', 1)])
 	]
 
 	return train_dataset, val_dataset, val_datasets
