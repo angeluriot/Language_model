@@ -1,6 +1,5 @@
 .vscode
-/bacup
-/bacup_2
+/bacup*
 /venv
 /data
 /output
