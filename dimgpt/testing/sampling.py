@@ -49,24 +49,25 @@ class Sampler():
 		return np.random.choice(range(len(probabilities)), p = probabilities)
 
 
-	def generate(self, input: str, max_length: int, keep_input = False, temperature: float = 1.0,
+	def generate(self, input: str, max_length: int, chat_bot: bool = False, temperature: float = 1.0,
 		top_p: float = 1.0, no_repeat: float = 0.0, verbose: bool = False, max_print_line_length = 0) -> str:
 
 		self.model.eval()
+		user_token = self.tokenizer.encode('<user>')[0]
+		bot_token = self.tokenizer.encode('<bot>')[0]
 
 		with torch.no_grad():
 
-			input = self.tokenizer.encode(input).tolist()
+			if chat_bot:
+				input = self.tokenizer.encode('<eot><user>' + input + '<bot>').tolist()
+			else:
+				input = self.tokenizer.encode('<eot>' + input).tolist()
+
 			output = []
 			to_print = []
 			last_line_length = 0
 
-			if len(input) == 0:
-				input = [EOT_INDEX]
-			elif input[0] != EOT_INDEX:
-				input = [EOT_INDEX] + input
-
-			if keep_input:
+			if not chat_bot:
 				output = input[1:].copy()
 				to_print = input[1:].copy()
 				text = self.tokenizer.decode(to_print)
@@ -75,6 +76,10 @@ class Sampler():
 			for _ in range(max_length):
 
 				index = self.sample(input, temperature, top_p, no_repeat)
+
+				if chat_bot and index in [EOT_INDEX, user_token, bot_token]:
+					break
+
 				input.append(index)
 				output.append(index)
 				to_print.append(index)

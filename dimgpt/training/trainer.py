@@ -178,15 +178,17 @@ class Trainer():
 
 			for i in range(NUM_ACCUMULATIONS):
 
-				# Forward pass
-				prediction = self.model(x)
+				with CONTEXT:
 
-				# Loss
-				loss = nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS
-				self.loss += loss.item()
+					# Forward pass
+					prediction = self.model(x)
 
-				# Accuracy
-				self.accuracy += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
+					# Loss
+					loss = nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS
+					self.loss += loss.item()
+
+					# Accuracy
+					self.accuracy += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
 
 				# Next load data (asyncronous)
 				if i < NUM_ACCUMULATIONS - 1:
@@ -223,12 +225,14 @@ class Trainer():
 							# Load data
 							x, y = val_dataset.next()
 
-							# Forward pass
-							prediction = self.model(x)
+							with CONTEXT:
 
-							# Loss and accuracy
-							self.val_losses[i] += (nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS).item()
-							self.val_accuracies[i] += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
+								# Forward pass
+								prediction = self.model(x)
+
+								# Loss and accuracy
+								self.val_losses[i] += (nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS).item()
+								self.val_accuracies[i] += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
 
 				# Save
 				self.save_metrics()

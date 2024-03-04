@@ -1,4 +1,5 @@
 import torch
+from contextlib import nullcontext
 
 # ============== Dataset ============== #
 
@@ -44,8 +45,10 @@ VAL_INTERVAL = 50
 # ===================================== #
 
 GPU_ENABLED = torch.cuda.is_available()
+FLOAT16_ENABLED = GPU_ENABLED and torch.cuda.is_bf16_supported()
 DEVICE_NAME = 'cuda:0' if GPU_ENABLED else 'cpu'
 DEVICE = torch.device(DEVICE_NAME)
+CONTEXT = torch.autocast(device_type='cuda', dtype=torch.bfloat16) if FLOAT16_ENABLED else nullcontext()
 EOT_INDEX = VOCAB_SIZE - (len(CONTROL_CHARS) - CONTROL_CHARS.index('<eot>'))
 
 # ===================================== #

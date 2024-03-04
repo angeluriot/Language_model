@@ -2,3 +2,5 @@ torch
 datasets
 tqdm
 tokenizers
+unidecode
+regex
