@@ -8,5 +8,7 @@ final_SPF.xml
 __pycache__
 .DS_Store
 env.py
-/test.ipynb
+/test*.ipynb
 /show.ipynb
+/test.txt
+/triton*

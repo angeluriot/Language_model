@@ -1,4 +1,4 @@
-import torch
+import os, torch
 from contextlib import nullcontext
 
 # ============== Dataset ============== #
@@ -6,11 +6,46 @@ from contextlib import nullcontext
 DATA_DIR = 'data'
 OUTPUT_DIR = 'output'
 NUM_THREADS = 16
-VAL_RATIO = 0.001
+
 TOKENIZER_DATA_SIZE = 300_000_000
-CONTROL_CHARS = ['<tab>', '<nl>', '<sot>', '<som>', '<user>', '<bot>', '<eom>', '<eot>', '<unk>', '<pad>']
+MIN_DOCUMENT_SIZE = 64
+PRETRAINING_VAL_RATIO = 0.001
 MAX_TOKEN_LENGTH = 16
-AVERAGE_TOKEN_LENGTH = 4.3
+CONTROL_TOKENS = ['⮜unknown⮞', '⮜padding⮞', '⮜start-of-text⮞', '⮜tab⮞', '⮜new-line⮞', '⮜human⮞', '⮜system⮞', '⮜user⮞', '⮜assistant⮞', '⮜end-of-text⮞']
+PADDING_TOKEN = 1
+FORCED_TOKENS = ['Dimension', ' Dimension', 'GPT', ' GPT', 'IA', ' IA', 'Generative', ' Generative', 'Pre', ' Pre', 'trained', ' trained', 'Transformer', ' Transformer']
+
+FINETUNING_VAL_RATIO = 0.01
+
+SPLIT_RATIOS = [
+	0.099,	# human
+	0.9,	# chatbot
+	0.001	# DimensionGPT
+]
+
+HUMAN_PREPROMPT_RATIOS = [
+	0.3,	# human
+	0.0,	# chatbot
+	0.0,	# DimensionGPT
+	0.7		# None
+]
+
+CHATBOT_PREPROMPT_RATIOS = [
+	0.0,	# human
+	0.5,	# chatbot
+	0.4,	# DimensionGPT
+	0.1		# None
+]
+
+DIMENSION_GPT_PREPROMPT_RATIOS = [
+	0.0,	# human
+	0.0,	# chatbot
+	1.0,	# DimensionGPT
+	0.0		# None
+]
+
+INSTRUCTION_LOSS_STRENGTH = 0.1
+PREPROMPT = "Une discussion entre un utilisateur et DimensionGPT, un modèle de langage conversationnel français créé par le développeur indépendant Dimension et basé sur l'architecture GPT."
 
 # =============== Model =============== #
 
@@ -37,6 +72,7 @@ DECAY_STEPS = 500_000
 WEIGHT_DECAY = 0.1
 BETA_1 = 0.9
 BETA_2 = 0.95
+EPSILON = 1e-5
 CLIP_GRADIENT = 1.0
 
 METRICS_BETA = 0.9
@@ -49,24 +85,3 @@ FLOAT16_ENABLED = GPU_ENABLED and torch.cuda.is_bf16_supported()
 DEVICE_NAME = 'cuda:0' if GPU_ENABLED else 'cpu'
 DEVICE = torch.device(DEVICE_NAME)
 CONTEXT = torch.autocast(device_type='cuda', dtype=torch.bfloat16) if FLOAT16_ENABLED else nullcontext()
-EOT_INDEX = VOCAB_SIZE - (len(CONTROL_CHARS) - CONTROL_CHARS.index('<eot>'))
-
-# ===================================== #
-
-# CC100 nb documents: 59,448,891
-# CC100 nb chars: 141,796,063,805
-
-# Wikipedia nb documents: 2,402,095
-# Wikipedia nb chars: 6,916,728,196
-
-# French instructs nb documents: 11,794,112
-# French instructs nb chars: 5,604,589,425
-
-# French reddit nb documents: 556,621
-# French reddit nb chars: 445,808,054
-
-# French tweets nb documents: 1,526,724
-# French tweets nb chars: 119,159,266
-
-# My tweets nb documents: 70,035
-# My tweets nb chars: 4,638,984

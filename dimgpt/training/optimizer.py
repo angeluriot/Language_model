@@ -20,6 +20,7 @@ class AdamW(torch.optim.AdamW):
 			groups,
 			lr = learning_rate,
 			betas = (BETA_1, BETA_2),
+			eps = EPSILON,
 			fused = GPU_ENABLED,
 			**kwargs
 		)

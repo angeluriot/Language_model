@@ -12,7 +12,8 @@ def split(text: str) -> list[str]:
 
 	# Split in words
 
-	reg = r'(' + r'|'.join(CONTROL_CHARS) + r'|\d+|\s+|\p{L}+|[^\d\p{L}\s' + r''.join([f'[{i}]' for i in CONTROL_CHARS]) + r']+)'
+	safe_control_tokens = [regex.escape(c) for c in CONTROL_TOKENS]
+	reg = r'(' + r'|'.join(safe_control_tokens) + r'|\d+|\s+|\p{L}+|[^\d\p{L}\s' + r''.join([f'[{i}]' for i in safe_control_tokens]) + r']+)'
 	words = regex.split(reg, text, flags = regex.UNICODE, concurrent = False)
 	words = list(filter(None, words))
 
@@ -23,12 +24,12 @@ def split(text: str) -> list[str]:
 
 	while i < len(words) - 1:
 
-		if words[i] == ' ':
+		if words[i] == ' ' and words[i + 1] not in CONTROL_TOKENS:
 			temp.append(' ' + words[i + 1])
 			i += 2
 			continue
 
-		if words[i].endswith(' '):
+		if words[i].endswith(' ') and words[i + 1] not in CONTROL_TOKENS:
 			temp.extend([words[i][:-1], ' ' + words[i + 1]])
 			i += 2
 			continue

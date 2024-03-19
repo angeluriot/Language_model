@@ -3,20 +3,19 @@ import torch
 from torch import nn
 
 from dimgpt.settings import *
-from dimgpt.training.data import Dataset
+from dimgpt.training.datasets import Dataset
 from dimgpt.training.model import Model
 from dimgpt.training.optimizer import AdamW
 
 
 class Trainer():
 
-	def __init__(self, model: Model, train_dataset: Dataset, val_datasets: list[Dataset]):
+	def __init__(self, model: Model, dataset: Dataset):
 
 		self.model = model
 		model.train()
 
-		self.train_dataset = train_dataset
-		self.val_datasets = val_datasets
+		self.dataset = dataset
 
 		self.time = None
 		self.step = 0
@@ -25,10 +24,10 @@ class Trainer():
 		self.learning_rate = 0.0
 		self.loss = 0.0
 		self.accuracy = 0.0
+		self.val_loss = 0.0
+		self.val_accuracy = 0.0
 		self.loss_ema = None
 		self.accuracy_ema = None
-		self.val_losses = [0.0] * len(self.val_datasets)
-		self.val_accuracies = [0.0] * len(self.val_datasets)
 		self.best_val_loss = float('inf')
 
 		self.optimizer = AdamW(self.model.parameters(), self.learning_rate)
@@ -40,8 +39,8 @@ class Trainer():
 			'epochs': [],
 			'loss': [],
 			'accuracy': [],
-			'val_losses': [[] for _ in range(len(self.val_datasets))],
-			'val_accuracies': [[] for _ in range(len(self.val_datasets))]
+			'val_loss': [],
+			'val_accuracy': []
 		}
 
 
@@ -80,7 +79,7 @@ class Trainer():
 
 		print(f'Epochs: {self.epochs:.4f} | Steps: {self.step:,} | Tokens: {self.tokens:,} | LR: {self.learning_rate:.5f}   ||   ' \
 			f'Loss: {self.loss_ema:.5f} | Accuracy: {self.accuracy_ema * 100.0:.4f} % | ' \
-			f'Val loss: {self.val_losses[0]:.5f} | Val accuracy: {self.val_accuracies[0] * 100.0:.4f} %       ', end = '\r')
+			f'Val loss: {self.val_loss:.5f} | Val accuracy: {self.val_accuracy * 100.0:.4f} %       ', end = '\r')
 
 
 	# Save metrics
@@ -98,10 +97,8 @@ class Trainer():
 		self.metrics_history["epochs"].append(self.epochs)
 		self.metrics_history["loss"].append(self.loss_ema)
 		self.metrics_history["accuracy"].append(self.accuracy_ema)
-
-		for i in range(len(self.val_datasets)):
-			self.metrics_history["val_losses"][i].append(self.val_losses[i])
-			self.metrics_history["val_accuracies"][i].append(self.val_accuracies[i])
+		self.metrics_history["val_loss"].append(self.val_loss)
+		self.metrics_history["val_accuracy"].append(self.val_accuracy)
 
 		if not os.path.exists(OUTPUT_DIR):
 			os.makedirs(OUTPUT_DIR)
@@ -119,12 +116,9 @@ class Trainer():
 		self.epochs = self.metrics_history["epochs"][-1]
 		self.loss_ema = self.metrics_history["loss"][-1]
 		self.accuracy_ema = self.metrics_history["accuracy"][-1]
-
-		for i in range(len(self.val_datasets)):
-			self.val_losses[i] = self.metrics_history["val_losses"][i][-1]
-			self.val_accuracies[i] = self.metrics_history["val_accuracies"][i][-1]
-
-		self.best_val_loss = min(self.metrics_history["val_losses"][0])
+		self.val_loss = self.metrics_history["val_loss"][-1]
+		self.val_accuracy = self.metrics_history["val_accuracy"][-1]
+		self.best_val_loss = min(self.metrics_history["val_loss"])
 		self.time = time.time()
 
 
@@ -162,7 +156,7 @@ class Trainer():
 			# Update step
 			self.step += 1
 			self.tokens += (MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS
-			self.epochs += ((MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS) / self.train_dataset.size()
+			self.epochs += ((MAX_CONTEXT + 1) * BATCH_SIZE * NUM_ACCUMULATIONS) / self.dataset.train_size()
 
 			# Update learning rate
 			self.update_learning_rate()
@@ -174,7 +168,7 @@ class Trainer():
 			self.accuracy = 0.0
 
 			# First load data (asyncronous)
-			x, y = self.train_dataset.next()
+			x, y, strength = self.dataset.next_train()
 
 			for i in range(NUM_ACCUMULATIONS):
 
@@ -184,15 +178,22 @@ class Trainer():
 					prediction = self.model(x)
 
 					# Loss
-					loss = nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS
+					loss = nn.functional.cross_entropy(
+						input = prediction.reshape(-1, prediction.shape[-1]),
+						target = y.reshape(-1),
+						ignore_index = PADDING_TOKEN,
+						reduction = 'none'
+					)
+					loss = ((loss * strength.reshape(-1)).sum() / (strength.sum() + 1e-8)) / NUM_ACCUMULATIONS
 					self.loss += loss.item()
 
 					# Accuracy
-					self.accuracy += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
+					accuracy = (prediction.argmax(dim = 2) == y).to(dtype = torch.float32)
+					self.accuracy += (((accuracy * strength).sum() / (strength.sum() + 1e-8)) / NUM_ACCUMULATIONS).item()
 
 				# Next load data (asyncronous)
 				if i < NUM_ACCUMULATIONS - 1:
-					x, y = self.train_dataset.next()
+					x, y, strength = self.dataset.next_train()
 
 				# Backward pass
 				loss.backward()
@@ -215,32 +216,39 @@ class Trainer():
 
 				with torch.no_grad():
 
-					for i, val_dataset in enumerate(self.val_datasets):
+					self.val_loss = 0.0
+					self.val_accuracy = 0.0
 
-						self.val_losses[i] = 0.0
-						self.val_accuracies[i] = 0.0
+					for _ in range(NUM_ACCUMULATIONS):
 
-						for _ in range(NUM_ACCUMULATIONS):
+						# Load data
+						x, y, strength = self.dataset.next_val()
 
-							# Load data
-							x, y = val_dataset.next()
+						with CONTEXT:
 
-							with CONTEXT:
+							# Forward pass
+							prediction = self.model(x)
 
-								# Forward pass
-								prediction = self.model(x)
+							# Loss
+							loss = nn.functional.cross_entropy(
+								input = prediction.reshape(-1, prediction.shape[-1]),
+								target = y.reshape(-1),
+								ignore_index = PADDING_TOKEN,
+								reduction = 'none'
+							)
+							self.val_loss += (((loss * strength.reshape(-1)).sum() / (strength.sum() + 1e-8)) / NUM_ACCUMULATIONS).item()
 
-								# Loss and accuracy
-								self.val_losses[i] += (nn.functional.cross_entropy(prediction.reshape(-1, prediction.shape[-1]), y.reshape(-1)) / NUM_ACCUMULATIONS).item()
-								self.val_accuracies[i] += ((prediction.argmax(dim = 2) == y).to(dtype = torch.float32).mean() / NUM_ACCUMULATIONS).item()
+							# Accuracy
+							accuracy = (prediction.argmax(dim = 2) == y).to(dtype = torch.float32)
+							self.val_accuracy += (((accuracy * strength).sum() / (strength.sum() + 1e-8)) / NUM_ACCUMULATIONS).item()
 
 				# Save
 				self.save_metrics()
 				self.save_model(os.path.join(OUTPUT_DIR, 'last'))
 
 				# Save best
-				if self.val_losses[0] <= self.best_val_loss:
-					self.best_val_loss = self.val_losses[0]
+				if self.val_loss <= self.best_val_loss:
+					self.best_val_loss = self.val_loss
 					self.save_model(os.path.join(OUTPUT_DIR, 'best'))
 
 			# -------------------- #

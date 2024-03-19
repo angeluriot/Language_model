@@ -13,19 +13,20 @@ class Sampler():
 
 		self.model = model
 		self.tokenizer = tokenizer
+		self.preprompt = [self.tokenizer.system_token, *self.tokenizer.encode(PREPROMPT)]
 
 
 	def get_probabilities(self, input: list[int]) -> npt.NDArray[np.float32]:
 
 		probabilities = self.model(torch.tensor([input], dtype = torch.long, device = DEVICE), only_last = True)[0].detach().to('cpu').numpy()
-		probabilities = np.log(np.exp(probabilities) / np.sum(np.exp(probabilities)))
+		probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
 
 		return probabilities
 
 
-	def sample(self, input: list[int], temperature: float = 1.0, top_p: float = 1.0, no_repeat_strength: float = 0.0) -> int:
+	def sample(self, input: list[int], chatbot: bool, temperature: float = 1.0, top_p: float = 1.0, no_repeat_strength: float = 0.0) -> int:
 
-		probabilities = self.get_probabilities(input)
+		probabilities = np.log(self.get_probabilities(input))
 		proximity = MAX_CONTEXT
 
 		for i in reversed(range(max(len(input) - MAX_CONTEXT, 0), len(input))):
@@ -38,6 +39,19 @@ class Sampler():
 
 		probabilities /= temperature
 		probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
+
+		if chatbot:
+			probabilities[self.tokenizer.end_of_text_token] += probabilities[self.tokenizer.user_token]
+
+		probabilities[self.tokenizer.unknown_token] = 0.0
+		probabilities[self.tokenizer.padding_token] = 0.0
+		probabilities[self.tokenizer.start_of_text_token] = 0.0
+		probabilities[self.tokenizer.human_token] = 0.0
+		probabilities[self.tokenizer.system_token] = 0.0
+		probabilities[self.tokenizer.user_token] = 0.0
+		probabilities[self.tokenizer.assistant_token] = 0.0
+
+		probabilities /= np.sum(probabilities)
 
 		sorted_indices = np.argsort(-probabilities)
 		cumsum_probabilites = np.cumsum(probabilities[sorted_indices])
@@ -53,15 +67,15 @@ class Sampler():
 		top_p: float = 1.0, no_repeat: float = 0.0, verbose: bool = False, max_print_line_length = 0) -> str:
 
 		self.model.eval()
-		user_token = self.tokenizer.encode('<user>')[0]
-		bot_token = self.tokenizer.encode('<bot>')[0]
 
 		with torch.no_grad():
 
+			input = self.tokenizer.encode(input)
+
 			if chat_bot:
-				input = self.tokenizer.encode('<eot><user>' + input + '<bot>').tolist()
+				input = [self.tokenizer.start_of_text_token, *self.preprompt, self.tokenizer.user_token, *input, self.tokenizer.assistant_token]
 			else:
-				input = self.tokenizer.encode('<eot>' + input).tolist()
+				input = [self.tokenizer.start_of_text_token, *input]
 
 			output = []
 			to_print = []
@@ -77,7 +91,7 @@ class Sampler():
 
 				index = self.sample(input, temperature, top_p, no_repeat)
 
-				if chat_bot and index in [EOT_INDEX, user_token, bot_token]:
+				if index == self.tokenizer.end_of_text_token:
 					break
 
 				input.append(index)
