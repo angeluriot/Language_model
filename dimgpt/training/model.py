@@ -1,19 +1,54 @@
-import torch
+import torch, math
 from torch import nn
+from flash_attn import flash_attn_func
 
 from dimgpt.training.layers import *
 from dimgpt.settings import *
 
 
+class AttentionBlock(Module):
+
+	def __init__(self, **kwargs):
+
+		super().__init__(**kwargs)
+
+		self.query = Linear(EMBEDDING_DIM, NUM_HEADS * HEAD_DIM)
+		self.key = Linear(EMBEDDING_DIM, NUM_HEADS * HEAD_DIM)
+		self.value = Linear(EMBEDDING_DIM, NUM_HEADS * HEAD_DIM)
+		self.projection = Linear(NUM_HEADS * HEAD_DIM, EMBEDDING_DIM)
+		nn.init.normal_(self.projection.weight, mean = 0.0, std = INIT_STDDEV / math.sqrt(2 * NUM_BLOCKS))
+
+		self.residual_dropout = nn.Dropout(DROPOUT)
+
+
+	def forward(self, x: torch.Tensor):
+
+		batch_size, context_size, _ = x.shape
+
+		q = self.query(x)
+		k = self.key(x)
+		v = self.value(x)
+
+		q = q.view(batch_size, context_size, NUM_HEADS, HEAD_DIM)
+		k = k.view(batch_size, context_size, NUM_HEADS, HEAD_DIM)
+		v = v.view(batch_size, context_size, NUM_HEADS, HEAD_DIM)
+
+		x = flash_attn_func(q, k, v, dropout_p = DROPOUT if self.training else 0, causal = True)
+
+		x = x.view(batch_size, context_size, NUM_HEADS * HEAD_DIM)
+
+		return self.residual_dropout(self.projection(x))
+
+
 # Model block
-class Block(Module):
+class TransformerBlock(Module):
 
 	def __init__(self, **kwargs):
 
 		super().__init__(**kwargs)
 
 		self.norm_1 = LayerNorm(EMBEDDING_DIM)
-		self.attention = CausalSelfAttention()
+		self.attention = AttentionBlock()
 		self.norm_2 = LayerNorm(EMBEDDING_DIM)
 
 		self.mlp = nn.Sequential(
@@ -42,7 +77,7 @@ class Model(Module):
 		self.token_embedding = Embedding(VOCAB_SIZE, EMBEDDING_DIM)
 		self.position_embedding = Embedding(MAX_CONTEXT, EMBEDDING_DIM)
 		self.init_dropout = nn.Dropout(DROPOUT)
-		self.blocks = nn.Sequential(*[Block() for _ in range(NUM_BLOCKS)])
+		self.blocks = nn.Sequential(*[TransformerBlock() for _ in range(NUM_BLOCKS)])
 		self.final_norm = LayerNorm(EMBEDDING_DIM)
 		self.final_linear = Linear(EMBEDDING_DIM, VOCAB_SIZE, bias = False)
 		self.token_embedding.weight = self.final_linear.weight

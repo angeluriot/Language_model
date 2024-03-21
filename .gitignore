@@ -11,4 +11,4 @@ env.py
 /test*.ipynb
 /show.ipynb
 /test.txt
-/triton*
+/*.whl
