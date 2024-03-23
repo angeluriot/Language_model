@@ -50,27 +50,31 @@ class Module(nn.Module):
 
 class Linear(nn.Linear):
 
-	def __init__(self, in_features: int, out_features: int, bias: bool = USE_BIAS, **kwargs):
+	def __init__(self, in_features: int, out_features: int, **kwargs):
 
-		super().__init__(in_features, out_features, bias, **kwargs)
+		super().__init__(in_features, out_features, False, **kwargs)
 		nn.init.normal_(self.weight, mean = 0.0, std = INIT_STDDEV)
 
 
 class LayerNorm(Module):
 
-	def __init__(self, shape: int, bias: bool = USE_BIAS, epsilon: float = 1e-5, **kwargs):
+	def __init__(self, shape: int, epsilon: float = 1e-5, **kwargs):
 
 		super().__init__(**kwargs)
 
 		self.shape = (shape,)
 		self.weight = nn.Parameter(torch.ones(shape))
-		self.bias = nn.Parameter(torch.zeros(shape)) if bias else None
 		self.epsilon = epsilon
+
+
+	def _normalize(self, x: torch.Tensor):
+
+		return x * torch.rsqrt(x.pow(2).mean(-1, keepdim = True) + self.epsilon)
 
 
 	def forward(self, x: torch.Tensor):
 
-		return nn.functional.layer_norm(x, self.shape, self.weight, self.bias, self.epsilon)
+		return self._normalize(x.float()).type_as(x) * self.weight
 
 
 class Embedding(nn.Embedding):

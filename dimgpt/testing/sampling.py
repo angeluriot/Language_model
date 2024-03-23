@@ -18,7 +18,11 @@ class Sampler():
 
 	def get_probabilities(self, input: list[int]) -> npt.NDArray[np.float32]:
 
-		probabilities = self.model(torch.tensor([input], dtype = torch.long, device = DEVICE), only_last = True)[0].detach().to('cpu').numpy()
+		with CONTEXT:
+			model_input = torch.tensor([input], dtype = torch.long, device = DEVICE)
+			model_output = self.model(model_input, only_last = True)
+
+		probabilities = model_output[0].float().detach().to('cpu').numpy()
 		probabilities = np.exp(probabilities) / np.sum(np.exp(probabilities))
 
 		return probabilities
