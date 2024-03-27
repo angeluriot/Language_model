@@ -1,7 +1,8 @@
 .vscode
 /bacup*
 /venv
-/data
+/data/*
+!/data/README.md
 /output
 notes.txt
 final_SPF.xml
