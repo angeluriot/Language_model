@@ -1,7 +1,8 @@
 torch
 flash-attn
 datasets
-tqdm
 tokenizers
 unidecode
 regex
+tqdm
+psutil
