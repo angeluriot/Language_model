@@ -39,6 +39,8 @@ This repository contains the code to train and test autoregressive language mode
 
 Using this repository, I trained [**DimensionGPT-0.2B**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a small 0.2B language model on 50B tokens with my personal RTX 3090 GPU during ≈570 hours.
 
+<br/>
+
 ### Architecture
 
 The model is based on the transformer architecture (only the decoder part) from the paper [**Attention is All You Need**](https://doi.org/10.48550/arXiv.1706.03762) by **Google Brain** (2017), with a few improvements:
@@ -110,6 +112,7 @@ Here are the main parameters of the architecture:
 
 The resulting model has 208,929,792 trainable parameters and fits on a single RTX 3090 GPU with a batch size of 16 for training using mixed precision. For inference only, the model will probably fit on any modern GPU.
 
+<br/>
 
 ### Data
 
@@ -181,6 +184,8 @@ The dataset used to train this model is exclusively in french and is a mix of mu
 <br/>
 
 For the tokenization, I created my own tokenizer that starts by cleaning the text to keep only a predefined set of characters, then it uses the [**Byte Pair Encoding (BPE)**](https://en.wikipedia.org/wiki/Byte_pair_encoding) algorithm to create the vocabulary. I trained the tokenizer on a 300 million characters subset of the dataset to get my 32,000 tokens vocabulary.
+
+<br/>
 
 ### Training
 
@@ -288,6 +293,8 @@ I trained the model on my personal RTX 3090 GPU for 1 epoch on the full dataset 
 ### Fine-tuning
 
 I fine-tuned the model on the [**french instructions dataset**](https://github.com/angeluriot/French_instruct) I made for this project to create [**DimensionGPT-0.2B-Chat**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a 0.2B language model trained to follow instructions and answer questions in french.
+
+<br/>
 
 ### Tests
 
