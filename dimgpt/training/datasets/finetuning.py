@@ -64,12 +64,12 @@ class FinetuningDataset(Dataset):
 
 	def train_size(self) -> int:
 
-		return sum([len(self.train_data[key]) for key in self.train_data])
+		return sum([sum([len(i) for i in self.train_data[key]]) for key in self.train_data])
 
 
 	def val_size(self) -> int:
 
-		return len(self.val_data)
+		return sum([len(i) for i in self.val_data])
 
 
 	def __get_strength(self, doc: list[int], val: bool) -> list[int]:

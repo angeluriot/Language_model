@@ -3,6 +3,8 @@
 /venv
 /data/*
 !/data/README.md
+/models/*
+!/models/README.md
 /output
 notes.txt
 final_SPF.xml
@@ -10,6 +12,8 @@ __pycache__
 .DS_Store
 env.py
 /test*.ipynb
-/show.ipynb
+/show*.ipynb
 /test.txt
 /*.whl
+/validate.ipynb
+/dimgpt/testing/tester.py

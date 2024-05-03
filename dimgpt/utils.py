@@ -11,10 +11,10 @@ from dimgpt.settings import *
 def reset_rand() -> None:
 
 	now = dt.datetime.now()
-	seconds_since_midnight = int((now - now.replace(hour = 0, minute = 0, second = 0, microsecond = 0)).total_seconds())
-	random.seed(seconds_since_midnight)
-	np.random.seed(seconds_since_midnight)
-	torch.manual_seed(seconds_since_midnight)
+	milliseconds_since_midnight = (now.hour * 3600 + now.minute * 60 + now.second) * 1000 + now.microsecond // 1000
+	random.seed(milliseconds_since_midnight)
+	np.random.seed(milliseconds_since_midnight)
+	torch.manual_seed(milliseconds_since_midnight)
 
 
 # Check if there is a GPU available

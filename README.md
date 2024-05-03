@@ -8,7 +8,7 @@
 
 <br/>
 
-This repository contains the code to train and test autoregressive language models like [**ChatGPT**](https://openai.com/chatgpt) from scratch. I also used it to train the french open-weight [**DimensionGPT**](#dimensiongpt) models.
+This repository contains the code to train and test autoregressive language models like [**ChatGPT**](https://openai.com/chatgpt) from scratch. I also used it to train the french open-source [**DimensionGPT**](#dimensiongpt) models.
 
 <br/>
 
@@ -37,7 +37,7 @@ This repository contains the code to train and test autoregressive language mode
 
 # DimensionGPT
 
-Using this repository, I trained [**DimensionGPT**](todo), a small 0.2B language model on 50B tokens with my personal RTX 3090 GPU during ≈600 hours.
+Using this repository, I trained [**DimensionGPT-0.2B**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a small 0.2B language model on 50B tokens with my personal RTX 3090 GPU during ≈570 hours.
 
 ### Architecture
 
@@ -184,7 +184,7 @@ For the tokenization, I created my own tokenizer that starts by cleaning the tex
 
 ### Training
 
-I trained the model using stochastic gradient descent with warmup and cosine decay learning rate schedules, here are the main hyperparameters:
+For the training I used stochastic gradient descent with warmup and cosine decay learning rate schedules, here are the main hyperparameters:
 
 <table>
 	<thead>
@@ -239,19 +239,55 @@ I trained the model using stochastic gradient descent with warmup and cosine dec
 
 <br/>
 
-I trained the model for 1 epoch on the full dataset (≈100,000 steps) using mixed precision and gradient accumulation to increase the speed and reduce the memory usage. Despite this, the training still took almost 600 hours on my personal RTX 3090 GPU.
+I trained the model on my personal RTX 3090 GPU for 1 epoch on the full dataset (13 times the [**Chinchilla optimal**](https://doi.org/10.48550/arXiv.2203.15556)) using mixed precision and gradient accumulation to increase the speed and reduce the memory usage :
+
+<table>
+	<thead>
+		<tr>
+			<th align="center" colspan="2">Training summary</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td align="left">Tokens</td>
+			<td align="center">52,428,800,000</td>
+		</tr>
+		<tr>
+			<td align="left">Steps</td>
+			<td align="center">100,000</td>
+		</tr>
+		<tr>
+			<td align="left">FLOPs</td>
+			<td align="center">6.6 × 10<sup>19</sup></td>
+		</tr>
+		<tr>
+			<td align="left">Duration</td>
+			<td align="center">573 hours</td>
+		</tr>
+		<tr>
+			<td align="left">Final loss</td>
+			<td align="center">2.19</td>
+		</tr>
+		<tr>
+			<td align="left">Final accuracy</td>
+			<td align="center">54.8 %</td>
+		</tr>
+	</tbody>
+</table>
 
 <p align="center">
-	<img src="resources/misc/training.png" width="750">
+	<img src="resources/misc/loss.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/accuracy.png" width="750">
 </p>
 
 <br/>
 
 ### Fine-tuning
 
-I fine-tuned the model on the [**french instructions dataset**](https://github.com/angeluriot/French_instruct) I made for this project to create [**DimensionGPT-Chat**](todo), a 0.2B language model trained to follow instructions and answer questions in french.
-
-I also fine-tuned the model on Reddit comments to create [**DimensionGPT-Reddit**](todo), a 0.2B language model trained to talk like a french Reddit user.
+I fine-tuned the model on the [**french instructions dataset**](https://github.com/angeluriot/French_instruct) I made for this project to create [**DimensionGPT-0.2B-Chat**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a 0.2B language model trained to follow instructions and answer questions in french.
 
 ### Tests
 
@@ -277,9 +313,35 @@ Here are some examples of the model outputs:
 	<img src="resources/misc/test_5.png" width="750">
 </p>
 
+<p align="center">
+	<img src="resources/misc/test_6.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/test_7.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/test_8.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/test_9.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/test_10.png" width="750">
+</p>
+
+<p align="center">
+	<img src="resources/misc/test_11.png" width="750">
+</p>
+
+<br/>
+
 ### Weights
 
-The trained weights of the different models are available on [**Google Drive**](todo), you just need to:
+The trained weights of the different models are available on [**Google Drive**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), you just need to:
 
 * Download the `.pt` file of the model you want to use and put it in the `models` folder
 * Download the `vocab.txt` file and put it in the `data` folder
