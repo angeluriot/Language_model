@@ -1,4 +1,4 @@
-# Language model
+# 💬 Language model
 
 ![Release](https://img.shields.io/badge/Release-v1.0-blueviolet)
 ![Language](https://img.shields.io/badge/Language-Python-f2cb1b)
@@ -18,30 +18,30 @@ This repository contains the code to train and test autoregressive language mode
 
 <br/>
 
-# Summary
+# 📋 Summary
 
-* **[Summary](#summary)**
-* **[DimensionGPT](#dimensiongpt)**
-	* [Architecture](#architecture)
-	* [Data](#data)
-	* [Training](#training)
-	* [Fine-tuning](#fine-tuning)
-	* [Tests](#tests)
-	* [Weights](#weights)
-* **[Dependencies](#dependencies)**
-* **[Training](#training-1)**
-* **[Testing](#testing)**
-* **[Credits](#credits)**
+* **[📋 Summary](#summary)**
+* **[🤖 DimensionGPT](#dimensiongpt)**
+	* [🏗️ Architecture](#architecture)
+	* [💾 Data](#data)
+	* [🦾 Training](#training)
+	* [🪛 Fine-tuning](#fine-tuning)
+	* [🧪 Tests](#tests)
+	* [🎛️ Weights](#weights)
+* **[📦 Dependencies](#dependencies)**
+* **[🦾 Training](#training-1)**
+* **[🧪 Testing](#testing)**
+* **[🙏 Credits](#credits)**
 
 <br/>
 
-# DimensionGPT
+# 🤖 DimensionGPT
 
 Using this repository, I trained [**DimensionGPT-0.2B**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a small 0.2B language model on 50B tokens with my personal RTX 3090 GPU during ≈570 hours.
 
 <br/>
 
-### Architecture
+### 🏗️ Architecture
 
 The model is based on the transformer architecture (only the decoder part) from the paper [**Attention is All You Need**](https://doi.org/10.48550/arXiv.1706.03762) by **Google Brain** (2017), with a few improvements:
 
@@ -114,7 +114,7 @@ The resulting model has 208,929,792 trainable parameters and fits on a single RT
 
 <br/>
 
-### Data
+### 💾 Data
 
 The dataset used to train this model is exclusively in french and is a mix of multiple sources:
 
@@ -187,7 +187,7 @@ For the tokenization, I created my own tokenizer that starts by cleaning the tex
 
 <br/>
 
-### Training
+### 🦾 Training
 
 For the training I used stochastic gradient descent with warmup and cosine decay learning rate schedules, here are the main hyperparameters:
 
@@ -290,13 +290,13 @@ I trained the model on my personal RTX 3090 GPU for 1 epoch on the full dataset 
 
 <br/>
 
-### Fine-tuning
+### 🪛 Fine-tuning
 
 I fine-tuned the model on the [**french instructions dataset**](https://github.com/angeluriot/French_instruct) I made for this project to create [**DimensionGPT-0.2B-Chat**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a 0.2B language model trained to follow instructions and answer questions in french.
 
 <br/>
 
-### Tests
+### 🧪 Tests
 
 Here are some examples of the model outputs:
 
@@ -346,7 +346,7 @@ Here are some examples of the model outputs:
 
 <br/>
 
-### Weights
+### 🎛️ Weights
 
 The trained weights of the different models are available on [**Google Drive**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), you just need to:
 
@@ -355,7 +355,7 @@ The trained weights of the different models are available on [**Google Drive**](
 
 <br/>
 
-# Dependencies
+# 📦 Dependencies
 
 * [**Python**](https://www.python.org/)
 * [**PyTorch**](https://pytorch.org/)
@@ -381,7 +381,7 @@ $ pip install -r requirements.txt
 
 <br/>
 
-# Training
+# 🦾 Training
 
 * Run the `create_data.ipynb` file to create the tokenizer and the dataset *(it may take an entire day and consume a few hundred gigabytes of disk space)*
 
@@ -395,12 +395,12 @@ $ pip install -r requirements.txt
 <br/>
 
 
-# Testing
+# 🧪 Testing
 
 * Run the `testing.ipynb` file to use the models you downloaded or trained
 
 <br/>
 
-# Credits
+# 🙏 Credits
 
 * [**Angel Uriot**](https://github.com/angeluriot) : Creator of the project.
