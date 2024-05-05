@@ -1,4 +1,4 @@
-# Trained weights
+# 🎛️ Trained weights
 
 The trained weights of the different models are available on [**Google Drive**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), you just need to:
 
