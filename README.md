@@ -41,7 +41,7 @@ Using this repository, I trained [**DimensionGPT-0.2B**](https://drive.google.co
 
 <br/>
 
-### 🏗️ Architecture
+## 🏗️ Architecture
 
 The model is based on the transformer architecture (only the decoder part) from the paper [**Attention is All You Need**](https://doi.org/10.48550/arXiv.1706.03762) by **Google Brain** (2017), with a few improvements:
 
@@ -114,7 +114,7 @@ The resulting model has 208,929,792 trainable parameters and fits on a single RT
 
 <br/>
 
-### 💾 Data
+## 💾 Data
 
 The dataset used to train this model is exclusively in french and is a mix of multiple sources:
 
@@ -187,7 +187,7 @@ For the tokenization, I created my own tokenizer that starts by cleaning the tex
 
 <br/>
 
-### 🦾 Training
+## 🦾 Training
 
 For the training I used stochastic gradient descent with warmup and cosine decay learning rate schedules, here are the main hyperparameters:
 
@@ -290,13 +290,13 @@ I trained the model on my personal RTX 3090 GPU for 1 epoch on the full dataset 
 
 <br/>
 
-### 🪛 Fine-tuning
+## 🪛 Fine-tuning
 
 I fine-tuned the model on the [**french instructions dataset**](https://github.com/angeluriot/French_instruct) I made for this project to create [**DimensionGPT-0.2B-Chat**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), a 0.2B language model trained to follow instructions and answer questions in french.
 
 <br/>
 
-### 🧪 Tests
+## 🧪 Tests
 
 Here are some examples of the model outputs:
 
@@ -346,7 +346,7 @@ Here are some examples of the model outputs:
 
 <br/>
 
-### 🎛️ Weights
+## 🎛️ Weights
 
 The trained weights of the different models are available on [**Google Drive**](https://drive.google.com/drive/folders/1XxKdsR33rt6VTFAF8qwyE3uxulK7gK6m), you just need to:
 
