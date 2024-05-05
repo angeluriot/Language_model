@@ -22,15 +22,15 @@ This repository contains the code to train and test autoregressive language mode
 
 * **[📋 Summary](#-summary)**
 * **[🤖 DimensionGPT](#-dimensiongpt)**
-	* [🏗️ Architecture](#-architecture)
+	* [🏗️ Architecture](#%EF%B8%8F-architecture)
 	* [💾 Data](#-data)
 	* [🦾 Training](#-training)
 	* [🪛 Fine-tuning](#-fine-tuning)
 	* [🧪 Tests](#-tests)
-	* [🎛️ Weights](#-weights)
+	* [🎛️ Weights](#%EF%B8%8F-weights)
 * **[📦 Dependencies](#-dependencies)**
 * **[🦾 Training](#-training-1)**
-* **[🧪 Testing](#-testing)**
+* **[⚗️ Testing](#%EF%B8%8F-testing)**
 * **[🙏 Credits](#-credits)**
 
 <br/>
@@ -395,7 +395,7 @@ $ pip install -r requirements.txt
 <br/>
 
 
-# 🧪 Testing
+# ⚗️ Testing
 
 * Run the `testing.ipynb` file to use the models you downloaded or trained
 
