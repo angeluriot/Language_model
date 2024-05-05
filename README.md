@@ -8,7 +8,7 @@
 
 <br/>
 
-This repository contains the code to train and test autoregressive language models like [**ChatGPT**](https://openai.com/chatgpt) from scratch. I also used it to train the french open-source [**DimensionGPT**](#🤖-dimensiongpt) models.
+This repository contains the code to train and test autoregressive language models like [**ChatGPT**](https://openai.com/chatgpt) from scratch. I also used it to train the french open-source [**DimensionGPT**](#-dimensiongpt) models.
 
 <br/>
 
@@ -20,18 +20,18 @@ This repository contains the code to train and test autoregressive language mode
 
 # 📋 Summary
 
-* **[📋 Summary](#📋-summary)**
-* **[🤖 DimensionGPT](#🤖-dimensiongpt)**
-	* [🏗️ Architecture](#🏗️-architecture)
-	* [💾 Data](#💾-data)
-	* [🦾 Training](#🦾-training)
-	* [🪛 Fine-tuning](#🪛-fine-tuning)
-	* [🧪 Tests](#🧪-tests)
-	* [🎛️ Weights](#🎛️-weights)
-* **[📦 Dependencies](#📦-dependencies)**
-* **[🦾 Training](#🦾-training-1)**
-* **[🧪 Testing](#🧪-testing)**
-* **[🙏 Credits](#🙏-credits)**
+* **[📋 Summary](#-summary)**
+* **[🤖 DimensionGPT](#-dimensiongpt)**
+	* [🏗️ Architecture](#-architecture)
+	* [💾 Data](#-data)
+	* [🦾 Training](#-training)
+	* [🪛 Fine-tuning](#-fine-tuning)
+	* [🧪 Tests](#-tests)
+	* [🎛️ Weights](#-weights)
+* **[📦 Dependencies](#-dependencies)**
+* **[🦾 Training](#-training-1)**
+* **[🧪 Testing](#-testing)**
+* **[🙏 Credits](#-credits)**
 
 <br/>
 
@@ -387,7 +387,7 @@ $ pip install -r requirements.txt
 
 * Run the `training.ipynb` file *(you can stop the training at any time and resume it later thanks to the checkpoints)*
 
-* If you don't have an overpriced 24GB GPU like me, the default settings (those used to train [**DimensionGPT**](#🤖-dimensiongpt)) may not work for you. You can try to:
+* If you don't have an overpriced 24GB GPU like me, the default settings (those used to train [**DimensionGPT**](#-dimensiongpt)) may not work for you. You can try to:
 	* Reduce the **batch size** *(less stable and worse lowest point)*
 	* Increase the **accumulation steps** *(fix previous problems but slower)*
 	* Reduce some **architecture parameters** *(worse lowest point)*
